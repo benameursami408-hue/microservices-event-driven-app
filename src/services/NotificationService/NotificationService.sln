@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Api", "NotificationService.Api\NotificationService.Api.csproj", "{30DE2C42-3BEF-4F94-A007-47EE6ABFC574}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Application", "NotificationService.Application\NotificationService.Application.csproj", "{021B133A-B66B-4C44-974B-8D56BC808BBC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Domain", "NotificationService.Domain\NotificationService.Domain.csproj", "{896A4734-3F53-483D-A4B3-F7F0FF01C2D0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Infrastructure", "NotificationService.Infrastructure\NotificationService.Infrastructure.csproj", "{61F61FC4-7327-4555-B231-F64E84A1D6BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedEvents", "..\SharedEvents\SharedEvents.csproj", "{5990D24B-9156-4C43-A8CE-56B157D83941}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{30DE2C42-3BEF-4F94-A007-47EE6ABFC574}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{30DE2C42-3BEF-4F94-A007-47EE6ABFC574}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{30DE2C42-3BEF-4F94-A007-47EE6ABFC574}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{30DE2C42-3BEF-4F94-A007-47EE6ABFC574}.Release|Any CPU.Build.0 = Release|Any CPU
+		{021B133A-B66B-4C44-974B-8D56BC808BBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{021B133A-B66B-4C44-974B-8D56BC808BBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{021B133A-B66B-4C44-974B-8D56BC808BBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{021B133A-B66B-4C44-974B-8D56BC808BBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{896A4734-3F53-483D-A4B3-F7F0FF01C2D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{896A4734-3F53-483D-A4B3-F7F0FF01C2D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{896A4734-3F53-483D-A4B3-F7F0FF01C2D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{896A4734-3F53-483D-A4B3-F7F0FF01C2D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61F61FC4-7327-4555-B231-F64E84A1D6BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61F61FC4-7327-4555-B231-F64E84A1D6BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61F61FC4-7327-4555-B231-F64E84A1D6BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61F61FC4-7327-4555-B231-F64E84A1D6BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5990D24B-9156-4C43-A8CE-56B157D83941}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5990D24B-9156-4C43-A8CE-56B157D83941}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5990D24B-9156-4C43-A8CE-56B157D83941}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5990D24B-9156-4C43-A8CE-56B157D83941}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

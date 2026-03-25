@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: |
+        for sln in src/services/*/*.sln; do
+          if [ -f "$sln" ]; then
+             dotnet restore "$sln"
+          fi
+        done
+        for csproj in src/gateway/*/*.csproj; do
+          if [ -f "$csproj" ]; then
+             dotnet restore "$csproj"
+          fi
+        done
+
+    - name: Build backend
+      run: |
+        for sln in src/services/*/*.sln; do
+          if [ -f "$sln" ]; then
+             dotnet build "$sln" --no-restore --configuration Build
+          fi
+        done
+        for csproj in src/gateway/*/*.csproj; do
+          if [ -f "$csproj" ]; then
+             dotnet build "$csproj" --no-restore --configuration Build
+          fi
+        done
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+        
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build

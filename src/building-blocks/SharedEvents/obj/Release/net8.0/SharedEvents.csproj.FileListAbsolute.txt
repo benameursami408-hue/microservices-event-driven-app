@@ -1,0 +1,11 @@
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\bin\Release\net8.0\SharedEvents.deps.json
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\bin\Release\net8.0\SharedEvents.dll
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\bin\Release\net8.0\SharedEvents.pdb
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.AssemblyInfoInputs.cache
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.AssemblyInfo.cs
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.csproj.CoreCompileInputs.cache
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.dll
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\refint\SharedEvents.dll
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\SharedEvents.pdb
+C:\Users\Sami\Desktop\pfe.net\SharedEvents\obj\Release\net8.0\ref\SharedEvents.dll

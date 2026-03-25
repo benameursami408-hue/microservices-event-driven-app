@@ -1,0 +1,17 @@
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Infrastructure.deps.json
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Infrastructure.runtimeconfig.json
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Infrastructure.dll
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Infrastructure.pdb
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Domain.dll
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\bin\Release\net8.0\ReclamationService.Domain.pdb
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.AssemblyInfo.cs
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\Reclamat.37182595.Up2Date
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.dll
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\refint\ReclamationService.Infrastructure.dll
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.pdb
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ReclamationService.Infrastructure.genruntimeconfig.cache
+C:\Users\Sami\Desktop\pfe.net\ReclamationService\ReclamationService.Infrastructure\obj\Release\net8.0\ref\ReclamationService.Infrastructure.dll

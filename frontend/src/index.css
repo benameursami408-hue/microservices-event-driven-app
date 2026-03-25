@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@plugin "@tailwindcss/forms";
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    background-image:
+      radial-gradient(900px 500px at 10% -10%, rgba(14, 116, 144, 0.18), transparent 60%),
+      radial-gradient(700px 450px at 90% 0%, rgba(2, 132, 199, 0.14), transparent 55%),
+      radial-gradient(900px 600px at 40% 110%, rgba(245, 158, 11, 0.12), transparent 60%);
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-2xl border border-slate-200/70 bg-white/80 shadow-xl backdrop-blur;
+  }
+
+  .surface-solid {
+    @apply rounded-2xl border border-slate-200 bg-white shadow-xl;
+  }
+
+  .link {
+    @apply text-cyan-700 hover:text-cyan-800 underline decoration-cyan-400/50 underline-offset-4;
+  }
+}

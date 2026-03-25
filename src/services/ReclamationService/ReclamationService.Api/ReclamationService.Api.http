@@ -1,0 +1,6 @@
+@ReclamationService.Api_HostAddress = http://localhost:5057
+
+GET {{ReclamationService.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

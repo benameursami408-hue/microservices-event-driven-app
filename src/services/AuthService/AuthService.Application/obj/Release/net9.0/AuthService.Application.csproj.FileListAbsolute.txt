@@ -1,0 +1,17 @@
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\AuthService.Application.deps.json
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\AuthService.Application.dll
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\AuthService.Application.pdb
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\AuthService.Domain.dll
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\SharedEvents.dll
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\AuthService.Domain.pdb
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\bin\Release\net9.0\SharedEvents.pdb
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.csproj.AssemblyReference.cache
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.AssemblyInfoInputs.cache
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.AssemblyInfo.cs
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.csproj.CoreCompileInputs.cache
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthServ.67992DEE.Up2Date
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.dll
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\refint\AuthService.Application.dll
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\AuthService.Application.pdb
+C:\Users\Sami\Desktop\pfe.net\AuthService\AuthService.Application\obj\Release\net9.0\ref\AuthService.Application.dll
