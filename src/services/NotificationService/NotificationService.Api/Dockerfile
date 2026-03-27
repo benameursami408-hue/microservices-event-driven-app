@@ -1,20 +1,14 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-
-COPY NotificationService/NotificationService.Api/NotificationService.Api.csproj NotificationService/NotificationService.Api/
-COPY NotificationService/NotificationService.Application/NotificationService.Application.csproj NotificationService/NotificationService.Application/
-COPY NotificationService/NotificationService.Domain/NotificationService.Domain.csproj NotificationService/NotificationService.Domain/
-COPY NotificationService/NotificationService.Infrastructure/NotificationService.Infrastructure.csproj NotificationService/NotificationService.Infrastructure/
-COPY SharedEvents/SharedEvents.csproj SharedEvents/
-
-RUN dotnet restore NotificationService/NotificationService.Api/NotificationService.Api.csproj
 
 COPY . .
 
-WORKDIR /src/NotificationService/NotificationService.Api
+RUN dotnet restore services/NotificationService/NotificationService.Api/NotificationService.Api.csproj
+
+WORKDIR /src/services/NotificationService/NotificationService.Api
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*

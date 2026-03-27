@@ -1,8 +1,8 @@
 services:
   api-gateway:
     build:
-      context: .
-      dockerfile: ApiGateway/Dockerfile
+      context: ./src
+      dockerfile: gateway/ApiGateway/Dockerfile
     container_name: api-gateway
     ports:
       - "127.0.0.1:5000:8080"
@@ -61,8 +61,8 @@ services:
 
   auth-service:
     build:
-      context: .
-      dockerfile: AuthService/AuthService.Api/Dockerfile
+      context: ./src
+      dockerfile: services/AuthService/AuthService.Api/Dockerfile
     container_name: auth-service
     ports:
       - "127.0.0.1:5001:8080"
@@ -90,8 +90,8 @@ services:
 
   reclamation-service:
     build:
-      context: .
-      dockerfile: ReclamationService/ReclamationService.Api/Dockerfile
+      context: ./src
+      dockerfile: services/ReclamationService/ReclamationService.Api/Dockerfile
     container_name: reclamation-service
     ports:
       - "127.0.0.1:5002:8080"
@@ -119,8 +119,8 @@ services:
 
   notification-service:
     build:
-      context: .
-      dockerfile: NotificationService/NotificationService.Api/Dockerfile
+      context: ./src
+      dockerfile: services/NotificationService/NotificationService.Api/Dockerfile
     container_name: notification-service
     ports:
       - "127.0.0.1:5003:8080"

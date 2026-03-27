@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AuthService.Domain\AuthService.Domain.csproj" />
-    <ProjectReference Include="..\..\SharedEvents\SharedEvents.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\SharedEvents\SharedEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

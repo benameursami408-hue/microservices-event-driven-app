@@ -1,15 +1,14 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY ApiGateway/ApiGateway.csproj ApiGateway/
-RUN dotnet restore ApiGateway/ApiGateway.csproj
+COPY . .
 
-COPY ApiGateway/ ApiGateway/
+RUN dotnet restore gateway/ApiGateway/ApiGateway.csproj
 
-WORKDIR /src/ApiGateway
+WORKDIR /src/gateway/ApiGateway
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*

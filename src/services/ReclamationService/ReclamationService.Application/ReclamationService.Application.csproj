@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ReclamationService.Domain\ReclamationService.Domain.csproj" />
     <ProjectReference Include="..\ReclamationService.Infrastructure\ReclamationService.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\SharedEvents\SharedEvents.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\SharedEvents\SharedEvents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
