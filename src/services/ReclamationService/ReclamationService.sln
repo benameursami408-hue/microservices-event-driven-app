@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReclamationService.Infrastr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReclamationService.Domain", "ReclamationService.Domain\ReclamationService.Domain.csproj", "{FE7E9FEA-9D29-4944-9CA9-CC22E8C5F754}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedEvents", "..\SharedEvents\SharedEvents.csproj", "{ACCB35FC-17B7-49CC-B575-351E81BDAA61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedEvents", "..\..\building-blocks\SharedEvents\SharedEvents.csproj", "{ACCB35FC-17B7-49CC-B575-351E81BDAA61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

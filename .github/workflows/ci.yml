@@ -35,12 +35,20 @@ jobs:
       run: |
         for sln in src/services/*/*.sln; do
           if [ -f "$sln" ]; then
-             dotnet build "$sln" --no-restore --configuration Build
+             dotnet build "$sln" --no-restore --configuration Release
           fi
         done
         for csproj in src/gateway/*/*.csproj; do
           if [ -f "$csproj" ]; then
-             dotnet build "$csproj" --no-restore --configuration Build
+             dotnet build "$csproj" --no-restore --configuration Release
+          fi
+        done
+
+    - name: Run backend tests
+      run: |
+        for testproj in src/services/*/*/*.Tests.csproj; do
+          if [ -f "$testproj" ]; then
+             dotnet test "$testproj" --configuration Release --verbosity normal
           fi
         done
 
@@ -55,4 +63,5 @@ jobs:
       working-directory: ./frontend
       run: |
         npm ci
+        npm run lint
         npm run build

@@ -6,7 +6,9 @@ import Button from '../components/Button.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import { roleLabel } from '../utils/enums.js'
 
-function Item({ to, icon: Icon, children }) {
+function Item({ to, icon, children }) {
+  const Icon = icon
+
   return (
     <NavLink
       to={to}

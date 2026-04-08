@@ -17,10 +17,16 @@ namespace ReclamationService.Application.Consumers
             _logger = logger;
         }
 
-        public Task Consume(ConsumeContext<UserCreatedEvent> context)
+    public Task Consume(ConsumeContext<UserCreatedEvent> context)
+    {
+        var message = context.Message;
+        _logger.LogInformation("Receiving UserCreatedEvent for UserId: {UserId}, Email: {Email}", message.UserId, message.Email);
+
+        if (!string.Equals(message.Role, "CLIENT", StringComparison.OrdinalIgnoreCase))
         {
-            var message = context.Message;
-            _logger.LogInformation("Receiving UserCreatedEvent for UserId: {UserId}, Email: {Email}", message.UserId, message.Email);
+            _logger.LogInformation("Skipping Client creation for non-client role: {Role}", message.Role);
+            return Task.CompletedTask;
+        }
 
             try
             {
@@ -50,6 +56,6 @@ namespace ReclamationService.Application.Consumers
             }
 
             return Task.CompletedTask;
-        }
     }
+}
 }

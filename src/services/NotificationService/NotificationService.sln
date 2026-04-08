@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Domain"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NotificationService.Infrastructure", "NotificationService.Infrastructure\NotificationService.Infrastructure.csproj", "{61F61FC4-7327-4555-B231-F64E84A1D6BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedEvents", "..\SharedEvents\SharedEvents.csproj", "{5990D24B-9156-4C43-A8CE-56B157D83941}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedEvents", "..\..\building-blocks\SharedEvents\SharedEvents.csproj", "{5990D24B-9156-4C43-A8CE-56B157D83941}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

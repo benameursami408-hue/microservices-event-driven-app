@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using AuthService.Domain.Enums;
 
 namespace AuthService.Application.DTOs;
 
@@ -28,7 +27,4 @@ public class RegisterDto
     [Required]
     [MinLength(8)]
     public string Password { get; set; } = string.Empty;
-
-    [Required]
-    public UserRole Role { get; set; }
 }

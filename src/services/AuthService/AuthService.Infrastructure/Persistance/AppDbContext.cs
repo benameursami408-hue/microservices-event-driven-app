@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using AuthService.Domain.Entities;
+using AuthService.Infrastructure.Outbox;
 
 namespace AuthService.Infrastructure.Data
 {
@@ -10,5 +11,6 @@ namespace AuthService.Infrastructure.Data
         }
 
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     }
 }

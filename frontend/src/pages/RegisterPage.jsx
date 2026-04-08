@@ -7,7 +7,6 @@ import { z } from 'zod'
 import Button from '../components/Button.jsx'
 import TextField from '../components/TextField.jsx'
 import { useAuth } from '../hooks/useAuth.js'
-import { UserRole } from '../utils/enums.js'
 
 const schema = z
   .object({
@@ -55,7 +54,6 @@ export default function RegisterPage() {
         address: values.address || '',
         email: values.email,
         password: values.password,
-        role: UserRole.CLIENT,
       })
       navigate('/login', { replace: true })
     } catch (err) {

@@ -20,6 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 20s
     restart: on-failure
 
   sqlserver:
@@ -69,10 +70,16 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=AuthDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=AuthDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=True
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-azertyuiopqsdfghjklmwxcvbn}
+      - Seed__Enabled=${SEED_ENABLED:-true}
+      - Seed__AdminEmail=${SEED_ADMIN_EMAIL:-admin@local}
+      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:-Admin123!}
+      - Seed__AdminFirstName=${SEED_ADMIN_FIRSTNAME:-Admin}
+      - Seed__AdminLastName=${SEED_ADMIN_LASTNAME:-User}
+      - Seed__AdminPhoneNumber=${SEED_ADMIN_PHONE:-0000000000}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
       - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
@@ -86,6 +93,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 60s
     restart: on-failure
 
   reclamation-service:
@@ -98,7 +106,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=True
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-azertyuiopqsdfghjklmwxcvbn}
@@ -115,6 +123,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 60s
     restart: on-failure
 
   notification-service:
@@ -127,8 +136,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=True
       - Notifications__AdminEmail=${NOTIFICATIONS_ADMIN_EMAIL:-admin@local}
+      - Jwt__Issuer=${JWT_ISSUER:-AuthService}
+      - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
+      - Jwt__SecretKey=${JWT_SECRET:-azertyuiopqsdfghjklmwxcvbn}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
       - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
@@ -142,6 +154,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 60s
     restart: on-failure
 
 volumes:

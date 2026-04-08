@@ -1,11 +1,13 @@
-﻿using AuthService.Application.Services;
-using AuthService.Domain.Entities;
+﻿using AuthService.Application.Mappers;
+using AuthService.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "ADMIN")]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
@@ -16,43 +18,18 @@ namespace AuthService.Api.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<User>> GetAll()
+        public ActionResult<List<AuthService.Application.DTOs.UserDto>> GetAll()
         {
-            return Ok(_userService.GetAll());
+            var items = _userService.GetAll().Select(u => u.ToDto()).ToList();
+            return Ok(items);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<User> GetById(long id)
+        public ActionResult<AuthService.Application.DTOs.UserDto> GetById(long id)
         {
             var user = _userService.GetById(id);
             if (user == null) return NotFound();
-            return Ok(user);
-        }
-
-        [HttpPost]
-        public ActionResult<User> Create(User user)
-        {
-            var createdUser = _userService.Create(user);
-            return CreatedAtAction(nameof(GetById), new { id = createdUser.Id }, createdUser);
-        }
-
-        [HttpPut("{id}")]
-        public IActionResult Update(long id, User user)
-        {
-            if (id != user.Id) return BadRequest("L'ID ne correspond pas.");
-
-            _userService.Update(user);
-            return NoContent();
-        }
-
-        [HttpDelete("{id}")]
-        public IActionResult Delete(long id)
-        {
-            var user = _userService.GetById(id);
-            if (user == null) return NotFound();
-
-            _userService.Delete(id);
-            return NoContent();
+            return Ok(user.ToDto());
         }
     }
 }

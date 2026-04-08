@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components, react-hooks/set-state-in-effect */
 import { createContext, useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 

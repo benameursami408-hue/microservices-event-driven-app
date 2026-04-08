@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ReclamationService.Domain.Entities;
+using ReclamationService.Infrastructure.Outbox;
 
 namespace ReclamationService.Infrastructure.Data
 {
@@ -11,5 +12,7 @@ namespace ReclamationService.Infrastructure.Data
 
         public DbSet<Reclamation> Reclamations { get; set; } = null!;
         public DbSet<Client> Clients { get; set; } = null!;
+        public DbSet<ReclamationHistory> ReclamationHistories { get; set; } = null!;
+        public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     }
 }

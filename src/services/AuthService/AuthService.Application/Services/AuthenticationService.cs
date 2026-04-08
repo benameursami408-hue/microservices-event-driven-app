@@ -2,8 +2,8 @@ using AuthService.Application.DTOs;
 using AuthService.Application.Exceptions;
 using AuthService.Application.Interfaces;
 using AuthService.Application.Mappers;
+using AuthService.Application.Outbox;
 using AuthService.Domain.Interfaces;
-using MassTransit;
 using SharedEvents.Events;
 
 namespace AuthService.Application.Services;
@@ -13,18 +13,18 @@ public class AuthenticationService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtProvider _jwtProvider;
-    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly IOutboxWriter _outboxWriter;
 
     public AuthenticationService(
         IUserRepository userRepository, 
         IPasswordHasher passwordHasher, 
         IJwtProvider jwtProvider,
-        IPublishEndpoint publishEndpoint)
+        IOutboxWriter outboxWriter)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtProvider = jwtProvider;
-        _publishEndpoint = publishEndpoint;
+        _outboxWriter = outboxWriter;
     }
 
     public async Task<UserDto> RegisterAsync(RegisterDto request)
@@ -45,9 +45,10 @@ public class AuthenticationService : IAuthService
         // 4. Save to database
         await _userRepository.AddAsync(user);
 
-        // Publish event to RabbitMQ
-        await _publishEndpoint.Publish(new UserCreatedEvent
+        // Persist event to outbox for reliable async dispatch.
+        await _outboxWriter.EnqueueAsync(new UserCreatedEvent
         {
+            CorrelationId = Guid.NewGuid().ToString("N"),
             UserId = user.Id,
             FirstName = user.FirstName,
             LastName = user.LastName,

@@ -16,6 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ReclamationService.Application\ReclamationService.Application.csproj" />
+    <ProjectReference Include="..\..\..\building-blocks\SharedEvents\SharedEvents.csproj" />
     <ProjectReference Include="..\ReclamationService.Domain\ReclamationService.Domain.csproj" />
   </ItemGroup>
 

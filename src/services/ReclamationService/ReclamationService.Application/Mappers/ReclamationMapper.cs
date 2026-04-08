@@ -23,12 +23,24 @@ public static class ReclamationMapper
             UpdatedAt = reclamation.UpdatedAt,
             ClientId = reclamation.ClientId,
             ClientName = reclamation.ClientName,
-            SAVId = reclamation.SAVId,
-            SAVName = reclamation.SAVName
+            SavId = reclamation.SAVId,
+            SavName = reclamation.SAVName,
+            AssignedAt = reclamation.AssignedAt,
+            TechnicianId = reclamation.TechnicianId,
+            TechnicianName = reclamation.TechnicianName,
+            PlannedStartAt = reclamation.PlannedStartAt,
+            PlannedEndAt = reclamation.PlannedEndAt,
+            PlanningNote = reclamation.PlanningNote,
+            ResolutionNote = reclamation.ResolutionNote,
+            ResolvedAt = reclamation.ResolvedAt,
+            ClosedAt = reclamation.ClosedAt,
+            CancelledAt = reclamation.CancelledAt,
+            RejectedAt = reclamation.RejectedAt,
+            RejectionReason = reclamation.RejectionReason
         };
     }
 
-    public static Reclamation ToEntity(this CreateReclamationDto dto)
+    public static Reclamation ToEntity(this CreateReclamationDto dto, long clientId, string clientName)
     {
         if (dto == null)
         {
@@ -40,13 +52,11 @@ public static class ReclamationMapper
             Reference = GenerateReference(),
             Description = dto.Description,
             Priority = dto.Priority,
-            Status = "Ouverte",
-            CreatedAt = DateTime.Now,
-            UpdatedAt = DateTime.Now,
-            ClientId = dto.ClientId,
-            ClientName = dto.ClientName,
-            SAVId = dto.SAVId,
-            SAVName = dto.SAVName
+            Status = ReclamationService.Domain.Enums.ReclamationStatus.Open,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            ClientId = clientId,
+            ClientName = clientName
         };
     }
 
@@ -54,12 +64,11 @@ public static class ReclamationMapper
     {
         reclamation.Description = dto.Description;
         reclamation.Priority = dto.Priority;
-        reclamation.Status = dto.Status;
-        reclamation.UpdatedAt = DateTime.Now;
+        reclamation.UpdatedAt = DateTime.UtcNow;
     }
 
     private static string GenerateReference()
     {
-        return $"REC-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
+        return $"REC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
     }
 }

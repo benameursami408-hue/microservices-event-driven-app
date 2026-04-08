@@ -7,6 +7,8 @@ import { roleLabel } from '../utils/enums.js'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const role = String(user?.role ?? '').toUpperCase()
+  const canCreate = role === 'CLIENT' || role === 'ADMIN'
 
   return (
     <div className="space-y-6">
@@ -30,12 +32,14 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Link to="/app/reclamations/new">
-              <Button>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                New reclamation
-              </Button>
-            </Link>
+            {canCreate ? (
+              <Link to="/app/reclamations/new">
+                <Button>
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  New reclamation
+                </Button>
+              </Link>
+            ) : null}
             <Link to="/app/notifications">
               <Button variant="secondary">
                 <Bell className="h-4 w-4" aria-hidden="true" />

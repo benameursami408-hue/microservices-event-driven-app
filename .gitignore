@@ -1,0 +1,19 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# IDE
+**/.vs/
+**/.idea/
+
+# Node
+**/node_modules/
+**/dist/
+
+# Local environment
+.env
+.env.*
+
+# OS
+Thumbs.db
+Desktop.ini

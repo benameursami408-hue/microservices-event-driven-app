@@ -1,4 +1,4 @@
-﻿using ReclamationService.Domain.Entities;
+using ReclamationService.Domain.Entities;
 using ReclamationService.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using ReclamationService.Domain.Enums;
@@ -35,7 +35,49 @@ namespace ReclamationService.Infrastructure.Repositories
 
         public List<Reclamation> GetAll()
         {
-            return _context.Reclamations.ToList();
+            return _context.Reclamations
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+
+        public List<Reclamation> GetForClient(long clientId)
+        {
+            return _context.Reclamations
+                .Where(r => r.ClientId == clientId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+
+        public List<Reclamation> GetOpenBacklog()
+        {
+            return _context.Reclamations
+                .Where(r => r.Status == ReclamationStatus.Open)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+
+        public List<Reclamation> GetForSav(long savId)
+        {
+            return _context.Reclamations
+                .Where(r => r.SAVId == savId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+
+        public List<Reclamation> GetForTechnician(long technicianId)
+        {
+            return _context.Reclamations
+                .Where(r => r.TechnicianId == technicianId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+
+        public List<Reclamation> GetByStatus(ReclamationStatus status)
+        {
+            return _context.Reclamations
+                .Where(r => r.Status == status)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
         }
 
         public Reclamation? GetById(long id)

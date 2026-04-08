@@ -1,5 +1,6 @@
 using AuthService.Application.DTOs;
 using AuthService.Domain.Entities;
+using AuthService.Domain.Enums;
 
 namespace AuthService.Application.Mappers;
 
@@ -40,8 +41,28 @@ public static class UserMapper
             Address = dto.Address,
             Email = dto.Email,
             Password = dto.Password, // Usually overwritten by hashed password later in the service
-            Role = dto.Role,
+            Role = UserRole.CLIENT,
             IsActive = true // Default state for new registrations
+        };
+    }
+
+    public static User ToEntity(this CreateUserDto dto)
+    {
+        if (dto == null)
+        {
+            return null!;
+        }
+
+        return new User
+        {
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            PhoneNumber = dto.PhoneNumber,
+            Address = dto.Address,
+            Email = dto.Email,
+            Password = dto.Password,
+            Role = dto.Role,
+            IsActive = dto.IsActive
         };
     }
 }

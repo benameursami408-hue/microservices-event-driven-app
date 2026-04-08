@@ -12,18 +12,4 @@ public class CreateReclamationDto
     [Required]
     [EnumDataType(typeof(NamePriority))]
     public NamePriority Priority { get; set; }
-
-    [Required]
-    public long ClientId { get; set; }
-
-    [Required]
-    [StringLength(100)]
-    public string ClientName { get; set; } = string.Empty;
-
-    [Required]
-    public long SAVId { get; set; }
-
-    [Required]
-    [StringLength(100)]
-    public string SAVName { get; set; } = string.Empty;
 }

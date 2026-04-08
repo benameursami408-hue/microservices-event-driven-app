@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ReclamationService.Domain\ReclamationService.Domain.csproj" />
-    <ProjectReference Include="..\ReclamationService.Infrastructure\ReclamationService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\building-blocks\SharedEvents\SharedEvents.csproj" />
   </ItemGroup>
 

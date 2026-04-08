@@ -31,11 +31,14 @@ Vite dev server (default): `http://localhost:5173`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `GET /api/reclamations`
+- `GET /api/reclamations/query?page=1&pageSize=10&search=...`
 - `POST /api/reclamations`
 - `GET /api/reclamations/{id}`
 - `PUT /api/reclamations/{id}`
 - `DELETE /api/reclamations/{id}`
 - `GET /api/notifications?take=50`
+- `PATCH /api/notifications/{id}/read`
+- `PATCH /api/notifications/read-all`
 
 ## Notes
 

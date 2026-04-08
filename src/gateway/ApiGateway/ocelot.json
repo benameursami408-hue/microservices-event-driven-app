@@ -13,6 +13,18 @@
       ]
     },
     {
+      "UpstreamPathTemplate": "/api/admin/{catchAll}",
+      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "DownstreamPathTemplate": "/api/admin/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "auth-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
       "UpstreamPathTemplate": "/api/reclamations",
       "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
       "DownstreamPathTemplate": "/api/reclamations",

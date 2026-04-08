@@ -12,8 +12,4 @@ public class UpdateReclamationDto
     [Required]
     [EnumDataType(typeof(NamePriority))]
     public NamePriority Priority { get; set; }
-
-    [Required]
-    [StringLength(30)]
-    public string Status { get; set; } = string.Empty;
 }

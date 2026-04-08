@@ -10,4 +10,5 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<ProcessedIntegrationEvent> ProcessedIntegrationEvents { get; set; } = null!;
 }
