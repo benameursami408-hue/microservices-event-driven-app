@@ -6,6 +6,7 @@ using AuthService.Application.Outbox;
 using AuthService.Domain.Enums;
 using AuthService.Domain.Interfaces;
 using SharedEvents.Events;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Application.Services;
 
@@ -62,5 +63,75 @@ public class AdminUsersService
         });
 
         return user.ToDto();
+    }
+
+    public async Task<UserDto> UpdateAsync(long id, UpdateUserDto request)
+    {
+        var existing = _userRepository.GetById(id);
+        if (existing == null)
+        {
+            throw new NotFoundException("User not found.");
+        }
+
+        var emailOwner = await _userRepository.GetByEmailAsync(request.Email);
+        if (emailOwner != null && emailOwner.Id != id)
+        {
+            throw new BadRequestException("This email is already registered.");
+        }
+
+        existing.FirstName = request.FirstName;
+        existing.LastName = request.LastName;
+        existing.PhoneNumber = request.PhoneNumber;
+        existing.Address = request.Address;
+        existing.Email = request.Email;
+        existing.Role = request.Role;
+        existing.IsActive = request.IsActive;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            existing.Password = _passwordHasher.Hash(request.Password);
+        }
+
+        _userRepository.Update(existing);
+        return existing.ToDto();
+    }
+
+    public void Delete(long id)
+    {
+        var existing = _userRepository.GetById(id);
+        if (existing == null)
+        {
+            throw new NotFoundException("User not found.");
+        }
+
+        _userRepository.Delete(id);
+    }
+
+    public async Task<UserStatsDto> GetStatsAsync()
+    {
+        var query = _userRepository.Query();
+
+        var total = await query.CountAsync();
+        var active = await query.CountAsync(u => u.IsActive);
+
+        var byRole = await query
+            .GroupBy(u => u.Role)
+            .Select(g => new UserRoleCountDto { Role = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var activeByRole = await query
+            .Where(u => u.IsActive)
+            .GroupBy(u => u.Role)
+            .Select(g => new UserRoleCountDto { Role = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        return new UserStatsDto
+        {
+            Total = total,
+            Active = active,
+            Inactive = total - active,
+            ByRole = byRole.OrderBy(x => x.Role).ToList(),
+            ActiveByRole = activeByRole.OrderBy(x => x.Role).ToList()
+        };
     }
 }

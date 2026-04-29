@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using ReclamationService.Api.Infrastructure;
 using ReclamationService.Infrastructure.Outbox;
 using System.Text;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,14 @@ builder.Services.AddMassTransit(x =>
 {
     x.SetEndpointNameFormatter(new KebabCaseEndpointNameFormatter("reclamation", includeNamespace: false));
     x.AddConsumer<UserCreatedConsumer>();
+    x.AddConsumer<TechnicianAssignedConsumer>();
+    x.AddConsumer<AppointmentConfirmedConsumer>();
+    x.AddConsumer<AppointmentRescheduledConsumer>();
+    x.AddConsumer<AppointmentCancelledConsumer>();
+    x.AddConsumer<InterventionStartedConsumer>();
+    x.AddConsumer<InterventionCompletedConsumer>();
+    x.AddConsumer<RealisationReportedConsumer>();
+    x.AddConsumer<ReplanningRequiredConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -36,7 +45,33 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter: Bearer {your JWT token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddExceptionHandler<ReclamationService.Api.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -83,8 +118,14 @@ builder.Services.AddScoped<IReclamationRepository, ReclamationRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IReclamationHistoryRepository, ReclamationHistoryRepository>();
 builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+builder.Services.AddScoped<TicketClassificationService>();
+builder.Services.AddScoped<ReclamationPriorityService>();
+builder.Services.AddScoped<ReclamationSlaService>();
 builder.Services.AddScoped<ReclamationsService>();
+builder.Services.AddScoped<AdminReclamationStatsService>();
+builder.Services.AddScoped<InterventionProjectionService>();
 builder.Services.AddHostedService<OutboxDispatcher>();
+builder.Services.AddHostedService<SlaMonitorWorker>();
 
 var app = builder.Build();
 
@@ -97,6 +138,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -130,9 +172,9 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
         }
     }
 
-    using var outboxScope = app.Services.CreateScope();
-    var outboxDbContext = outboxScope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await outboxDbContext.Database.ExecuteSqlRawAsync(
+    using var bootstrapScope = app.Services.CreateScope();
+    var bootstrapDbContext = bootstrapScope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await bootstrapDbContext.Database.ExecuteSqlRawAsync(
         """
         IF OBJECT_ID(N'[dbo].[OutboxMessages]', N'U') IS NULL
         BEGIN
@@ -155,7 +197,104 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
             CREATE INDEX [IX_OutboxMessages_ProcessedAt_CreatedAt]
                 ON [dbo].[OutboxMessages]([ProcessedAt], [CreatedAt]);
         END
+
+        IF COL_LENGTH('dbo.Reclamations', 'ProductName') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ProductName] nvarchar(150) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'Barcode') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [Barcode] nvarchar(64) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ProductImageUrl') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ProductImageUrl] nvarchar(500) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PurchaseDate') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PurchaseDate] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'Brand') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [Brand] nvarchar(100) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'Model') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [Model] nvarchar(100) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'SerialNumber') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [SerialNumber] nvarchar(100) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ProductReference') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ProductReference] nvarchar(100) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'SellerName') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [SellerName] nvarchar(150) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PurchaseProofUrl') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PurchaseProofUrl] nvarchar(500) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'RequiresReplanning') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [RequiresReplanning] bit NOT NULL CONSTRAINT [DF_Reclamations_RequiresReplanning] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'LastInterventionOutcome') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [LastInterventionOutcome] nvarchar(40) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'LastInterventionReportSummary') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [LastInterventionReportSummary] nvarchar(2000) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'Severity') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [Severity] int NOT NULL CONSTRAINT [DF_Reclamations_Severity] DEFAULT(1);
+
+        IF COL_LENGTH('dbo.Reclamations', 'Category') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [Category] int NOT NULL CONSTRAINT [DF_Reclamations_Category] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'CategoryReason') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [CategoryReason] nvarchar(250) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'CategoryUpdatedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [CategoryUpdatedAt] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PriorityScore') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PriorityScore] int NOT NULL CONSTRAINT [DF_Reclamations_PriorityScore] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'PriorityReasons') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PriorityReasons] nvarchar(2000) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PrioritySource') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PrioritySource] int NOT NULL CONSTRAINT [DF_Reclamations_PrioritySource] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'PriorityUpdatedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PriorityUpdatedAt] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ManualPriorityOverride') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ManualPriorityOverride] bit NOT NULL CONSTRAINT [DF_Reclamations_ManualPriorityOverride] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'ManualPriorityOverrideReason') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ManualPriorityOverrideReason] nvarchar(500) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'IsBlocking') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [IsBlocking] bit NOT NULL CONSTRAINT [DF_Reclamations_IsBlocking] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'FollowUpCount') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [FollowUpCount] int NOT NULL CONSTRAINT [DF_Reclamations_FollowUpCount] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'FirstResponseDeadline') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [FirstResponseDeadline] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PlanningDeadline') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PlanningDeadline] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ResolutionDeadline') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ResolutionDeadline] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'SlaStatus') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [SlaStatus] int NOT NULL CONSTRAINT [DF_Reclamations_SlaStatus] DEFAULT(0);
+
+        IF COL_LENGTH('dbo.Reclamations', 'SlaBreachedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [SlaBreachedAt] datetime2 NULL;
         """);
+
+    if (app.Configuration.GetValue<bool>("Seed:Enabled"))
+    {
+        using var seedScope = app.Services.CreateScope();
+        var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await TestDataSeeder.SeedAsync(seedDbContext, logger);
+    }
 }
 
 app.Run();

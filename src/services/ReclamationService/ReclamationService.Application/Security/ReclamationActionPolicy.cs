@@ -7,9 +7,9 @@ public static class ReclamationActionPolicy
 {
     public const string Edit = "EDIT";
     public const string Assign = "ASSIGN";
-    public const string Plan = "PLAN";
-    public const string Start = "START";
-    public const string Resolve = "RESOLVE";
+    public const string RequestPlanning = "REQUEST_PLANNING";
+    public const string RecalculatePriority = "RECALCULATE_PRIORITY";
+    public const string OverridePriority = "OVERRIDE_PRIORITY";
     public const string Close = "CLOSE";
     public const string Cancel = "CANCEL";
     public const string Reject = "REJECT";
@@ -46,17 +46,15 @@ public static class ReclamationActionPolicy
 
         if ((isSav || isAdmin) && item.Status == ReclamationStatus.Assigned && (isAdmin || isMineSav))
         {
-            actions.Add(Plan);
+            actions.Add(RequestPlanning);
         }
 
-        if ((isSt || isAdmin) && item.Status == ReclamationStatus.Planned && (isAdmin || isMineTech))
+        if ((isSav || isAdmin)
+            && item.Status is not (ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected)
+            && (isAdmin || item.Status == ReclamationStatus.Open || isMineSav))
         {
-            actions.Add(Start);
-        }
-
-        if ((isSt || isAdmin) && item.Status == ReclamationStatus.InProgress && (isAdmin || isMineTech))
-        {
-            actions.Add(Resolve);
+            actions.Add(RecalculatePriority);
+            actions.Add(OverridePriority);
         }
 
         if ((isSav || isAdmin) && item.Status == ReclamationStatus.Resolved && (isAdmin || isMineSav))

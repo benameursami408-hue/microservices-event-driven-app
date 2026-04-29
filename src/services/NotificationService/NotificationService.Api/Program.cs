@@ -11,6 +11,7 @@ using NotificationService.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,16 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<ReclamationAssignedConsumer>();
     x.AddConsumer<ReclamationPlannedConsumer>();
     x.AddConsumer<ReclamationStatusChangedConsumer>();
+    x.AddConsumer<TechnicianAssignedConsumer>();
+    x.AddConsumer<AppointmentConfirmedConsumer>();
+    x.AddConsumer<AppointmentRescheduledConsumer>();
+    x.AddConsumer<AppointmentCancelledConsumer>();
+    x.AddConsumer<SlaNearBreachDetectedConsumer>();
+    x.AddConsumer<SlaBreachedConsumer>();
+    x.AddConsumer<PlanningConflictDetectedConsumer>();
+    x.AddConsumer<InterventionStartedConsumer>();
+    x.AddConsumer<RealisationReportedConsumer>();
+    x.AddConsumer<ReplanningRequiredConsumer>();
 
     x.UsingRabbitMq((context, cfg) =>
     {
@@ -39,7 +50,33 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter: Bearer {your JWT token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddExceptionHandler<NotificationService.Api.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -133,6 +170,13 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
             logger.LogWarning(ex, "Migration attempt {Attempt} failed; retrying in {DelaySeconds}s", attempt, delaySeconds);
             await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
         }
+    }
+
+    if (app.Configuration.GetValue<bool>("Seed:Enabled"))
+    {
+        using var seedScope = app.Services.CreateScope();
+        var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await TestDataSeeder.SeedAsync(seedDbContext, logger);
     }
 
     using var schemaScope = app.Services.CreateScope();

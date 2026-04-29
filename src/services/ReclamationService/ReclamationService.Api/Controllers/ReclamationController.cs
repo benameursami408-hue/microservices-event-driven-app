@@ -20,10 +20,12 @@ public class ReclamationsController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<List<ReclamationDto>> GetAll([FromQuery] ReclamationStatus? status = null)
+    public ActionResult<List<ReclamationDto>> GetAll(
+        [FromQuery] ReclamationStatus? status = null,
+        [FromQuery] TicketCategory? category = null)
     {
         var actor = User.ToCurrentUser(HttpContext);
-        return Ok(_reclamationService.GetVisible(actor, status));
+        return Ok(_reclamationService.GetVisible(actor, status, category));
     }
 
     [HttpGet("query")]
@@ -31,11 +33,12 @@ public class ReclamationsController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] ReclamationStatus? status = null,
+        [FromQuery] TicketCategory? category = null,
         [FromQuery] NamePriority? priority = null,
         [FromQuery] string? search = null)
     {
         var actor = User.ToCurrentUser(HttpContext);
-        return Ok(_reclamationService.QueryVisible(actor, status, priority, search, page, pageSize));
+        return Ok(_reclamationService.QueryVisible(actor, status, category, priority, search, page, pageSize));
     }
 
     [HttpGet("{id}")]
@@ -51,6 +54,13 @@ public class ReclamationsController : ControllerBase
     {
         var actor = User.ToCurrentUser(HttpContext);
         return Ok(_reclamationService.GetByPriority(priority, actor));
+    }
+
+    [HttpGet("category/{category}")]
+    public ActionResult<List<ReclamationDto>> GetByCategory(TicketCategory category)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(_reclamationService.GetByCategory(category, actor));
     }
 
     [HttpGet("reference/{reference}")]
@@ -92,6 +102,34 @@ public class ReclamationsController : ControllerBase
         return Ok(_reclamationService.GetHistory(id, actor));
     }
 
+    [HttpGet("{id}/priority")]
+    public async Task<ActionResult<ReclamationPriorityDto>> GetPriority(long id)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.GetPriorityAsync(id, actor));
+    }
+
+    [HttpGet("{id}/sla")]
+    public async Task<ActionResult<ReclamationSlaDto>> GetSla(long id)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.GetSlaAsync(id, actor));
+    }
+
+    [HttpPost("{id}/recalculate-priority")]
+    public async Task<ActionResult<ReclamationPriorityDto>> RecalculatePriority(long id)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.RecalculatePriorityAsync(id, actor));
+    }
+
+    [HttpPost("{id}/override-priority")]
+    public async Task<ActionResult<ReclamationPriorityDto>> OverridePriority(long id, [FromBody] OverridePriorityDto dto)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.OverridePriorityAsync(id, dto, actor));
+    }
+
     [HttpPatch("{id}/assign")]
     public async Task<ActionResult<ReclamationDto>> Assign(long id, [FromBody] AssignReclamationDto dto)
     {
@@ -105,6 +143,14 @@ public class ReclamationsController : ControllerBase
     {
         var actor = User.ToCurrentUser(HttpContext);
         var updated = await _reclamationService.PlanAsync(id, dto, actor);
+        return Ok(updated);
+    }
+
+    [HttpPatch("{id}/request-planning")]
+    public async Task<ActionResult<ReclamationDto>> RequestPlanning(long id, [FromBody] RequestPlanningDto dto)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        var updated = await _reclamationService.RequestPlanningAsync(id, dto, actor);
         return Ok(updated);
     }
 

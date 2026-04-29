@@ -207,6 +207,215 @@ public class NotificationWorkflow
         }
     }
 
+    public async Task HandleTechnicianAssignedAsync(TechnicianAssignedEvent message, CancellationToken cancellationToken = default)
+    {
+        var technicianNotification = new Notification
+        {
+            Type = "TECHNICIAN_ASSIGNED",
+            Title = "New assignment",
+            Message = $"You are assigned to reclamation '{message.Reference}'.",
+            UserId = message.TechnicianId,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(technicianNotification, cancellationToken);
+    }
+
+    public async Task HandleAppointmentConfirmedAsync(AppointmentConfirmedEvent message, CancellationToken cancellationToken = default)
+    {
+        var schedule = message.EndAt.HasValue
+            ? $"{message.StartAt:u} - {message.EndAt:u}"
+            : $"{message.StartAt:u}";
+
+        var technicianNotification = new Notification
+        {
+            Type = "APPOINTMENT_CONFIRMED",
+            Title = "Appointment confirmed",
+            Message = $"Appointment for reclamation '{message.Reference}' confirmed at {schedule}.",
+            UserId = message.TechnicianId,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(technicianNotification, cancellationToken);
+    }
+
+    public async Task HandleAppointmentRescheduledAsync(AppointmentRescheduledEvent message, CancellationToken cancellationToken = default)
+    {
+        var notification = new Notification
+        {
+            Type = "APPOINTMENT_RESCHEDULED",
+            Title = "Appointment rescheduled",
+            Message = $"Reclamation '{message.Reference}' rescheduled to {message.NewStartAt:u}.",
+            UserId = message.TechnicianId > 0 ? message.TechnicianId : null,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(notification, cancellationToken);
+    }
+
+    public async Task HandleAppointmentCancelledAsync(AppointmentCancelledEvent message, CancellationToken cancellationToken = default)
+    {
+        var notification = new Notification
+        {
+            Type = "APPOINTMENT_CANCELLED",
+            Title = "Appointment cancelled",
+            Message = $"Appointment for reclamation '{message.Reference}' has been cancelled.",
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(notification, cancellationToken);
+    }
+
+    public async Task HandleSlaNearBreachAsync(SlaNearBreachDetectedEvent message, CancellationToken cancellationToken = default)
+    {
+        var clientNotification = new Notification
+        {
+            Type = "SLA_NEAR_BREACH",
+            Title = "SLA proche du depassement",
+            Message = $"Le dossier '{message.Reference}' approche du depassement du SLA {message.SlaTarget} (echeance {message.DeadlineAt:u}).",
+            UserId = message.ClientId,
+            RecipientEmail = string.IsNullOrWhiteSpace(message.ClientEmail) ? null : message.ClientEmail,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(clientNotification, cancellationToken);
+
+        if (message.SavId.HasValue)
+        {
+            var savNotification = new Notification
+            {
+                Type = "SLA_NEAR_BREACH",
+                Title = "SLA a surveiller",
+                Message = $"Le dossier '{message.Reference}' est proche du depassement du SLA {message.SlaTarget}.",
+                UserId = message.SavId.Value,
+                SourceEvent = message.EventType,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await CreateSendAndPersistAsync(savNotification, cancellationToken);
+        }
+    }
+
+    public async Task HandleSlaBreachedAsync(SlaBreachedEvent message, CancellationToken cancellationToken = default)
+    {
+        var clientNotification = new Notification
+        {
+            Type = "SLA_BREACHED",
+            Title = "SLA depasse",
+            Message = $"Le dossier '{message.Reference}' a depasse le SLA {message.SlaTarget} le {message.BreachedAt:u}.",
+            UserId = message.ClientId,
+            RecipientEmail = string.IsNullOrWhiteSpace(message.ClientEmail) ? null : message.ClientEmail,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(clientNotification, cancellationToken);
+
+        if (message.SavId.HasValue)
+        {
+            var savNotification = new Notification
+            {
+                Type = "SLA_BREACHED",
+                Title = "SLA depasse",
+                Message = $"Le dossier '{message.Reference}' a depasse le SLA {message.SlaTarget}.",
+                UserId = message.SavId.Value,
+                SourceEvent = message.EventType,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await CreateSendAndPersistAsync(savNotification, cancellationToken);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.AdminEmail))
+        {
+            await CreateSendAndPersistAsync(new Notification
+            {
+                Type = "ADMIN_ALERT",
+                Title = "SLA depasse",
+                Message = $"Le dossier '{message.Reference}' a depasse le SLA {message.SlaTarget}.",
+                RecipientEmail = _options.AdminEmail,
+                SourceEvent = message.EventType,
+                CreatedAt = DateTime.UtcNow
+            }, cancellationToken);
+        }
+    }
+
+    public async Task HandlePlanningConflictAsync(PlanningConflictDetectedEvent message, CancellationToken cancellationToken = default)
+    {
+        var technicianNotification = new Notification
+        {
+            Type = "PLANNING_CONFLICT",
+            Title = "Conflit de planning detecte",
+            Message = $"Impossible de planifier '{message.Reference}': {message.Message}",
+            UserId = message.TechnicianId,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(technicianNotification, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(_options.AdminEmail))
+        {
+            await CreateSendAndPersistAsync(new Notification
+            {
+                Type = "ADMIN_ALERT",
+                Title = "Conflit de planning",
+                Message = $"Conflit detecte pour '{message.Reference}' / technicien {message.TechnicianName}: {message.Message}",
+                RecipientEmail = _options.AdminEmail,
+                SourceEvent = message.EventType,
+                CreatedAt = DateTime.UtcNow
+            }, cancellationToken);
+        }
+    }
+
+    public async Task HandleInterventionStartedAsync(InterventionStartedEvent message, CancellationToken cancellationToken = default)
+    {
+        var notification = new Notification
+        {
+            Type = "INTERVENTION_STARTED",
+            Title = "Intervention started",
+            Message = $"Intervention for reclamation #{message.ReclamationId} has started.",
+            UserId = message.TechnicianId,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(notification, cancellationToken);
+    }
+
+    public async Task HandleRealisationReportedAsync(RealisationReportedEvent message, CancellationToken cancellationToken = default)
+    {
+        var notification = new Notification
+        {
+            Type = "INTERVENTION_REPORTED",
+            Title = "Intervention reported",
+            Message = $"Intervention result for reclamation #{message.ReclamationId}: {message.Outcome}.",
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(notification, cancellationToken);
+    }
+
+    public async Task HandleReplanningRequiredAsync(ReplanningRequiredEvent message, CancellationToken cancellationToken = default)
+    {
+        var notification = new Notification
+        {
+            Type = "REPLANNING_REQUIRED",
+            Title = "Replanning required",
+            Message = $"Replanning required for reclamation #{message.ReclamationId}: {message.ReasonCode}.",
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(notification, cancellationToken);
+    }
+
     private async Task CreateSendAndPersistAsync(Notification notification, CancellationToken cancellationToken)
     {
         try

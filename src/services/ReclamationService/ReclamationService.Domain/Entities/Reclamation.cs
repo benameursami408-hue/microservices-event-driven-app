@@ -23,6 +23,49 @@ namespace ReclamationService.Domain.Entities
         public NamePriority Priority { get; set; }
 
         [Required]
+        [EnumDataType(typeof(NamePriority))]
+        public NamePriority Severity { get; set; } = NamePriority.MEDUIM;
+
+        [Required]
+        [EnumDataType(typeof(TicketCategory))]
+        public TicketCategory Category { get; set; } = TicketCategory.Other;
+
+        [StringLength(250)]
+        public string? CategoryReason { get; set; }
+
+        public DateTime? CategoryUpdatedAt { get; set; }
+
+        public int PriorityScore { get; set; }
+
+        [StringLength(2000)]
+        public string? PriorityReasons { get; set; }
+
+        [Required]
+        [EnumDataType(typeof(PrioritySource))]
+        public PrioritySource PrioritySource { get; set; } = PrioritySource.Rules;
+
+        public DateTime? PriorityUpdatedAt { get; set; }
+
+        public bool ManualPriorityOverride { get; set; }
+
+        [StringLength(500)]
+        public string? ManualPriorityOverrideReason { get; set; }
+
+        public bool IsBlocking { get; set; }
+
+        public int FollowUpCount { get; set; }
+
+        public DateTime? FirstResponseDeadline { get; set; }
+        public DateTime? PlanningDeadline { get; set; }
+        public DateTime? ResolutionDeadline { get; set; }
+
+        [Required]
+        [EnumDataType(typeof(SlaStatus))]
+        public SlaStatus SlaStatus { get; set; } = SlaStatus.OnTrack;
+
+        public DateTime? SlaBreachedAt { get; set; }
+
+        [Required]
         [EnumDataType(typeof(ReclamationStatus))]
         public ReclamationStatus Status { get; set; } = ReclamationStatus.Open;
 
@@ -56,6 +99,14 @@ namespace ReclamationService.Domain.Entities
         [StringLength(500)]
         public string? PlanningNote { get; set; }
 
+        public bool RequiresReplanning { get; set; }
+
+        [StringLength(40)]
+        public string? LastInterventionOutcome { get; set; }
+
+        [StringLength(2000)]
+        public string? LastInterventionReportSummary { get; set; }
+
         [StringLength(2000)]
         public string? ResolutionNote { get; set; }
 
@@ -66,6 +117,35 @@ namespace ReclamationService.Domain.Entities
 
         [StringLength(500)]
         public string? RejectionReason { get; set; }
+
+        [StringLength(150)]
+        public string? ProductName { get; set; }
+
+        [StringLength(64)]
+        public string? Barcode { get; set; }
+
+        [StringLength(500)]
+        public string? ProductImageUrl { get; set; }
+
+        public DateTime? PurchaseDate { get; set; }
+
+        [StringLength(100)]
+        public string? Brand { get; set; }
+
+        [StringLength(100)]
+        public string? Model { get; set; }
+
+        [StringLength(100)]
+        public string? SerialNumber { get; set; }
+
+        [StringLength(100)]
+        public string? ProductReference { get; set; }
+
+        [StringLength(150)]
+        public string? SellerName { get; set; }
+
+        [StringLength(500)]
+        public string? PurchaseProofUrl { get; set; }
 
         public List<ReclamationHistory> History { get; set; } = new();
 

@@ -9,12 +9,33 @@ using System.Text;
 using AuthService.Infrastructure.Authentication;
 using AuthService.Application.Interfaces;
 using MassTransit;
-using AuthService.Domain.Entities;
-using AuthService.Domain.Enums;
 using AuthService.Application.Outbox;
 using AuthService.Infrastructure.Outbox;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+const string localDevelopmentUrl = "http://localhost:5165";
+var requestedUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")
+    ?? builder.Configuration["urls"];
+var isRunningInContainer = string.Equals(
+    Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"),
+    "true",
+    StringComparison.OrdinalIgnoreCase);
+string? localUrlOverrideReason = null;
+
+if (!isRunningInContainer)
+{
+    if (string.IsNullOrWhiteSpace(requestedUrls))
+    {
+        builder.WebHost.UseUrls(localDevelopmentUrl);
+        localUrlOverrideReason = "no ASPNETCORE_URLS or urls setting was provided";
+    }
+    else if (requestedUrls.Contains(":5000", StringComparison.OrdinalIgnoreCase))
+    {
+        builder.WebHost.UseUrls(localDevelopmentUrl);
+        localUrlOverrideReason = $"the requested URL '{requestedUrls}' uses port 5000 reserved for the API Gateway";
+    }
+}
 
 // MassTransit config
 builder.Services.AddMassTransit(x =>
@@ -35,7 +56,33 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Enter: Bearer {your JWT token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddExceptionHandler<AuthService.Api.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -92,6 +139,15 @@ if (!builder.Environment.IsDevelopment()
 
 var app = builder.Build();
 
+if (localUrlOverrideReason is not null)
+{
+    app.Logger.LogWarning(
+        "AuthService local startup URL was overridden because {Reason}. " +
+        "The service is listening on {LocalDevelopmentUrl} instead.",
+        localUrlOverrideReason,
+        localDevelopmentUrl);
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -140,31 +196,7 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
         using var seedScope = app.Services.CreateScope();
         var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var passwordHasher = seedScope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-
-        var hasAdmin = await seedDbContext.Users.AnyAsync(u => u.Role == UserRole.ADMIN);
-        if (!hasAdmin)
-        {
-            var email = app.Configuration["Seed:AdminEmail"] ?? "admin@local";
-            var password = app.Configuration["Seed:AdminPassword"] ?? "Admin123!";
-            var firstName = app.Configuration["Seed:AdminFirstName"] ?? "Admin";
-            var lastName = app.Configuration["Seed:AdminLastName"] ?? "User";
-            var phone = app.Configuration["Seed:AdminPhoneNumber"] ?? "0000000000";
-
-            seedDbContext.Users.Add(new User
-            {
-                FirstName = firstName,
-                LastName = lastName,
-                PhoneNumber = phone,
-                Address = "",
-                Email = email,
-                Password = passwordHasher.Hash(password),
-                IsActive = true,
-                Role = UserRole.ADMIN
-            });
-
-            await seedDbContext.SaveChangesAsync();
-            logger.LogWarning("Seeded ADMIN user Email={Email} (Seed:Enabled=true)", email);
-        }
+        await TestDataSeeder.SeedUsersAsync(seedDbContext, passwordHasher, logger);
     }
 
     using var outboxScope = app.Services.CreateScope();

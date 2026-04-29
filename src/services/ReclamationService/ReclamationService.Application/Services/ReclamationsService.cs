@@ -7,6 +7,7 @@ using ReclamationService.Domain.Entities;
 using ReclamationService.Domain.Enums;
 using ReclamationService.Domain.Interfaces;
 using SharedEvents.Events;
+using System.Text.Json;
 
 namespace ReclamationService.Application.Services;
 
@@ -16,17 +17,26 @@ public class ReclamationsService
     private readonly IClientRepository _clientRepository;
     private readonly IReclamationHistoryRepository _historyRepository;
     private readonly IOutboxWriter _outboxWriter;
+    private readonly TicketClassificationService _classificationService;
+    private readonly ReclamationPriorityService _priorityService;
+    private readonly ReclamationSlaService _slaService;
 
     public ReclamationsService(
         IReclamationRepository reclamationRepository,
         IClientRepository clientRepository,
         IReclamationHistoryRepository historyRepository,
-        IOutboxWriter outboxWriter)
+        IOutboxWriter outboxWriter,
+        TicketClassificationService classificationService,
+        ReclamationPriorityService priorityService,
+        ReclamationSlaService slaService)
     {
         _reclamationRepository = reclamationRepository;
         _clientRepository = clientRepository;
         _historyRepository = historyRepository;
         _outboxWriter = outboxWriter;
+        _classificationService = classificationService;
+        _priorityService = priorityService;
+        _slaService = slaService;
     }
 
     public async Task<ReclamationDto> CreateAsync(CreateReclamationDto dto, CurrentUser actor)
@@ -36,6 +46,8 @@ public class ReclamationsService
         var clientName = string.IsNullOrWhiteSpace(actor.FullName) ? (actor.Email ?? string.Empty) : actor.FullName;
 
         var reclamation = dto.ToEntity(actor.UserId, clientName);
+        var initialSnapshot = CaptureOperationalState(reclamation);
+        ApplyDerivedState(reclamation);
         var created = _reclamationRepository.Create(reclamation);
 
         var clientEmail = actor.Email;
@@ -69,10 +81,15 @@ public class ReclamationsService
             OccurredAt = DateTime.UtcNow
         });
 
+        await QueueOperationalEventsAsync(created, initialSnapshot, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+
         return ToDtoWithActions(created, actor);
     }
 
-    public List<ReclamationDto> GetVisible(CurrentUser actor, ReclamationStatus? status = null)
+    public List<ReclamationDto> GetVisible(
+        CurrentUser actor,
+        ReclamationStatus? status = null,
+        TicketCategory? category = null)
     {
         var role = NormalizeRole(actor.Role);
         List<Reclamation> items;
@@ -115,12 +132,18 @@ public class ReclamationsService
             }
         }
 
+        if (category.HasValue)
+        {
+            items = items.Where(r => r.Category == category.Value).ToList();
+        }
+
         return items.Select(r => ToDtoWithActions(r, actor)).ToList();
     }
 
     public PagedResult<ReclamationDto> QueryVisible(
         CurrentUser actor,
         ReclamationStatus? status = null,
+        TicketCategory? category = null,
         NamePriority? priority = null,
         string? search = null,
         int page = 1,
@@ -129,7 +152,7 @@ public class ReclamationsService
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 200);
 
-        IEnumerable<ReclamationDto> query = GetVisible(actor, status);
+        IEnumerable<ReclamationDto> query = GetVisible(actor, status, category);
 
         if (priority.HasValue)
         {
@@ -143,6 +166,8 @@ public class ReclamationsService
                 (x.Reference ?? string.Empty).ToLowerInvariant().Contains(normalized)
                 || (x.ClientName ?? string.Empty).ToLowerInvariant().Contains(normalized)
                 || (x.Description ?? string.Empty).ToLowerInvariant().Contains(normalized)
+                || x.Category.ToString().ToLowerInvariant().Contains(normalized)
+                || (x.CategoryReason ?? string.Empty).ToLowerInvariant().Contains(normalized)
                 || x.Status.ToString().ToLowerInvariant().Contains(normalized));
         }
 
@@ -187,6 +212,11 @@ public class ReclamationsService
             .ToList();
     }
 
+    public List<ReclamationDto> GetByCategory(TicketCategory category, CurrentUser actor)
+    {
+        return GetVisible(actor, category: category);
+    }
+
     public ReclamationDto GetByReference(string reference, CurrentUser actor)
     {
         var reclamation = _reclamationRepository.GetByRefernce(reference);
@@ -200,6 +230,7 @@ public class ReclamationsService
     public ReclamationDto Update(long id, UpdateReclamationDto dto, CurrentUser actor)
     {
         var existing = GetByIdVisible(id, actor);
+        var before = CaptureOperationalState(existing);
 
         var role = NormalizeRole(actor.Role);
         if (role == "CLIENT")
@@ -227,7 +258,9 @@ public class ReclamationsService
         }
 
         existing.ApplyUpdate(dto);
+        ApplyDerivedState(existing);
         var updated = _reclamationRepository.Update(existing);
+        QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role)).GetAwaiter().GetResult();
         return ToDtoWithActions(updated, actor);
     }
 
@@ -267,11 +300,12 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.SAVId = savId;
         reclamation.SAVName = savName;
         reclamation.AssignedAt = DateTime.UtcNow;
         reclamation.Status = ReclamationStatus.Assigned;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -303,6 +337,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, dto.Comment);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
 
         return ToDtoWithActions(updated, actor);
     }
@@ -335,13 +370,14 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.TechnicianId = dto.TechnicianId;
         reclamation.TechnicianName = string.IsNullOrWhiteSpace(dto.TechnicianName) ? null : dto.TechnicianName;
         reclamation.PlannedStartAt = EnsureUtc(dto.PlannedStartAt);
         reclamation.PlannedEndAt = dto.PlannedEndAt.HasValue ? EnsureUtc(dto.PlannedEndAt.Value) : null;
         reclamation.PlanningNote = dto.PlanningNote;
         reclamation.Status = ReclamationStatus.Planned;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -381,6 +417,63 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, dto.PlanningNote);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
+        return ToDtoWithActions(updated, actor);
+    }
+
+    public async Task<ReclamationDto> RequestPlanningAsync(long id, RequestPlanningDto dto, CurrentUser actor)
+    {
+        EnsureRole(actor, "SAV", "ADMIN");
+
+        var reclamation = GetByIdInternal(id);
+        var role = NormalizeRole(actor.Role);
+
+        if (reclamation.Status != ReclamationStatus.Assigned)
+        {
+            throw new BadRequestException("Only ASSIGNED reclamations can request planning.");
+        }
+
+        if (role == "SAV" && reclamation.SAVId != actor.UserId)
+        {
+            throw new UnauthorizedAccessException();
+        }
+
+        var before = CaptureOperationalState(reclamation);
+        var client = _clientRepository.GetById(reclamation.ClientId);
+        await _outboxWriter.EnqueueAsync(new PlanningRequestedEvent
+        {
+            CorrelationId = actor.CorrelationId,
+            ReclamationId = reclamation.Id,
+            Reference = reclamation.Reference,
+            ClientId = reclamation.ClientId,
+            ClientName = reclamation.ClientName,
+            ClientEmail = client?.Email ?? string.Empty,
+            CustomerPhone = client?.PhoneNumber,
+            ServiceAddress = null,
+            SavId = reclamation.SAVId ?? actor.UserId,
+            SavName = reclamation.SAVName ?? actor.FullName ?? string.Empty,
+            Priority = reclamation.Priority.ToString().ToUpperInvariant(),
+            ProductName = reclamation.ProductName,
+            Brand = reclamation.Brand,
+            Model = reclamation.Model,
+            SerialNumber = reclamation.SerialNumber,
+            OccurredAt = DateTime.UtcNow
+        });
+
+        _historyRepository.Add(new ReclamationHistory
+        {
+            ReclamationId = reclamation.Id,
+            FromStatus = reclamation.Status,
+            ToStatus = reclamation.Status,
+            ActorUserId = actor.UserId,
+            ActorRole = role,
+            Comment = string.IsNullOrWhiteSpace(dto.Comment) ? "Planning requested" : dto.Comment,
+            OccurredAt = DateTime.UtcNow
+        });
+
+        ApplyDerivedState(reclamation);
+        var updated = _reclamationRepository.Update(reclamation);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -402,8 +495,9 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.Status = ReclamationStatus.InProgress;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -419,6 +513,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, "Started");
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -440,10 +535,11 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.ResolutionNote = dto.ResolutionNote;
         reclamation.ResolvedAt = DateTime.UtcNow;
         reclamation.Status = ReclamationStatus.Resolved;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -459,6 +555,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, dto.ResolutionNote);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -480,9 +577,10 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.Status = ReclamationStatus.Closed;
         reclamation.ClosedAt = DateTime.UtcNow;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -498,6 +596,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, dto.Comment);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -519,9 +618,10 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.Status = ReclamationStatus.Cancelled;
         reclamation.CancelledAt = DateTime.UtcNow;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -537,6 +637,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, "Cancelled");
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -559,10 +660,11 @@ public class ReclamationsService
         }
 
         var fromStatus = reclamation.Status;
+        var before = CaptureOperationalState(reclamation);
         reclamation.Status = ReclamationStatus.Rejected;
         reclamation.RejectedAt = DateTime.UtcNow;
         reclamation.RejectionReason = dto.Reason;
-        reclamation.UpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
 
         var updated = _reclamationRepository.Update(reclamation);
 
@@ -578,6 +680,7 @@ public class ReclamationsService
         });
 
         await QueueStatusChangedAsync(updated, fromStatus, updated.Status, actor, dto.Reason);
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
         return ToDtoWithActions(updated, actor);
     }
 
@@ -590,6 +693,143 @@ public class ReclamationsService
             .GetByReclamationId(id)
             .Select(h => h.ToDto())
             .ToList();
+    }
+
+    public async Task<ReclamationPriorityDto> GetPriorityAsync(long id, CurrentUser actor)
+    {
+        var reclamation = GetByIdVisible(id, actor);
+        var before = CaptureOperationalState(reclamation);
+        var beforeDerived = CaptureDerivedState(reclamation);
+        ApplyDerivedState(reclamation);
+
+        if (HasDerivedStateChanged(beforeDerived, reclamation))
+        {
+            var updated = _reclamationRepository.Update(reclamation);
+            await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+            return ToPriorityDto(updated);
+        }
+
+        return ToPriorityDto(reclamation);
+    }
+
+    public async Task<ReclamationSlaDto> GetSlaAsync(long id, CurrentUser actor)
+    {
+        var reclamation = GetByIdVisible(id, actor);
+        var before = CaptureOperationalState(reclamation);
+        var beforeDerived = CaptureDerivedState(reclamation);
+        ApplyDerivedState(reclamation);
+
+        if (HasDerivedStateChanged(beforeDerived, reclamation))
+        {
+            var updated = _reclamationRepository.Update(reclamation);
+            await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+            return ToSlaDto(updated);
+        }
+
+        return ToSlaDto(reclamation);
+    }
+
+    public async Task<int> SweepSlaAsync(CancellationToken cancellationToken = default)
+    {
+        var tracked = new[]
+        {
+            ReclamationStatus.Open,
+            ReclamationStatus.Assigned,
+            ReclamationStatus.Planned,
+            ReclamationStatus.InProgress
+        };
+
+        var reclamations = tracked
+            .SelectMany(_reclamationRepository.GetByStatus)
+            .GroupBy(item => item.Id)
+            .Select(group => group.First())
+            .ToList();
+
+        var updatedCount = 0;
+
+        foreach (var reclamation in reclamations)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var before = CaptureOperationalState(reclamation);
+            var beforeDerived = CaptureDerivedState(reclamation);
+            ApplyDerivedState(reclamation);
+
+            if (!HasDerivedStateChanged(beforeDerived, reclamation))
+            {
+                continue;
+            }
+
+            var updated = _reclamationRepository.Update(reclamation);
+            await QueueOperationalEventsAsync(
+                updated,
+                before,
+                $"sla-sweep-{updated.Id}-{DateTime.UtcNow:yyyyMMddHHmmss}",
+                0,
+                "SYSTEM");
+            updatedCount += 1;
+        }
+
+        return updatedCount;
+    }
+
+    public async Task<ReclamationPriorityDto> RecalculatePriorityAsync(long id, CurrentUser actor)
+    {
+        var reclamation = GetByIdVisible(id, actor);
+        EnsurePriorityManagement(actor, reclamation);
+        var before = CaptureOperationalState(reclamation);
+        reclamation.ManualPriorityOverride = false;
+        reclamation.ManualPriorityOverrideReason = null;
+        ApplyDerivedState(reclamation);
+        var updated = _reclamationRepository.Update(reclamation);
+
+        _historyRepository.Add(new ReclamationHistory
+        {
+            ReclamationId = updated.Id,
+            FromStatus = updated.Status,
+            ToStatus = updated.Status,
+            ActorUserId = actor.UserId,
+            ActorRole = NormalizeRole(actor.Role),
+            Comment = $"Priority recalculated to {updated.Priority} (score {updated.PriorityScore}).",
+            OccurredAt = DateTime.UtcNow
+        });
+
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+        return ToPriorityDto(updated);
+    }
+
+    public async Task<ReclamationPriorityDto> OverridePriorityAsync(long id, OverridePriorityDto dto, CurrentUser actor)
+    {
+        var reclamation = GetByIdVisible(id, actor);
+        EnsurePriorityManagement(actor, reclamation);
+
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+        {
+            throw new BadRequestException("Override reason is required.");
+        }
+
+        var before = CaptureOperationalState(reclamation);
+        reclamation.ManualPriorityOverride = true;
+        reclamation.ManualPriorityOverrideReason = dto.Reason.Trim();
+        reclamation.Priority = dto.Priority;
+        reclamation.PrioritySource = PrioritySource.ManualOverride;
+        reclamation.PriorityUpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
+
+        var updated = _reclamationRepository.Update(reclamation);
+        _historyRepository.Add(new ReclamationHistory
+        {
+            ReclamationId = updated.Id,
+            FromStatus = updated.Status,
+            ToStatus = updated.Status,
+            ActorUserId = actor.UserId,
+            ActorRole = NormalizeRole(actor.Role),
+            Comment = $"Manual priority override to {updated.Priority}: {dto.Reason.Trim()}",
+            OccurredAt = DateTime.UtcNow
+        });
+
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+        return ToPriorityDto(updated);
     }
 
     private Reclamation GetByIdInternal(long id)
@@ -722,6 +962,363 @@ public class ReclamationsService
             OccurredAt = DateTime.UtcNow
         });
     }
+
+    private void ApplyDerivedState(Reclamation reclamation)
+    {
+        var beforeDerived = CaptureDerivedState(reclamation);
+
+        var classification = _classificationService.Compute(reclamation);
+        reclamation.Category = classification.Category;
+        reclamation.CategoryReason = classification.Reason;
+
+        var sla = _slaService.Compute(reclamation);
+        _slaService.Apply(reclamation, sla);
+
+        var auto = _priorityService.Compute(reclamation);
+        if (reclamation.ManualPriorityOverride)
+        {
+            var reasons = auto.Reasons.ToList();
+            if (!string.IsNullOrWhiteSpace(reclamation.ManualPriorityOverrideReason))
+            {
+                reasons.Add($"Override manuel: {reclamation.ManualPriorityOverrideReason}");
+            }
+
+            reclamation.PriorityScore = auto.Score;
+            reclamation.PriorityReasons = SerializeReasons(reasons);
+            reclamation.PrioritySource = PrioritySource.ManualOverride;
+            reclamation.PriorityUpdatedAt ??= DateTime.UtcNow;
+        }
+        else
+        {
+            reclamation.Priority = auto.Level;
+            reclamation.PriorityScore = auto.Score;
+            reclamation.PriorityReasons = SerializeReasons(auto.Reasons);
+            reclamation.PrioritySource = PrioritySource.Rules;
+        }
+
+        var priorityChanged = beforeDerived.Priority != reclamation.Priority
+            || beforeDerived.PriorityScore != reclamation.PriorityScore
+            || beforeDerived.PrioritySource != reclamation.PrioritySource
+            || !string.Equals(beforeDerived.PriorityReasons, reclamation.PriorityReasons, StringComparison.Ordinal);
+
+        var categoryChanged = beforeDerived.Category != reclamation.Category
+            || !string.Equals(beforeDerived.CategoryReason, reclamation.CategoryReason, StringComparison.Ordinal);
+
+        var derivedChanged = categoryChanged
+            || priorityChanged
+            || beforeDerived.FirstResponseDeadline != reclamation.FirstResponseDeadline
+            || beforeDerived.PlanningDeadline != reclamation.PlanningDeadline
+            || beforeDerived.ResolutionDeadline != reclamation.ResolutionDeadline
+            || beforeDerived.SlaStatus != reclamation.SlaStatus
+            || beforeDerived.SlaBreachedAt != reclamation.SlaBreachedAt;
+
+        if (categoryChanged)
+        {
+            reclamation.CategoryUpdatedAt = DateTime.UtcNow;
+        }
+
+        if (priorityChanged)
+        {
+            reclamation.PriorityUpdatedAt = DateTime.UtcNow;
+        }
+
+        if (derivedChanged)
+        {
+            reclamation.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    private async Task QueueOperationalEventsAsync(
+        Reclamation reclamation,
+        OperationalState before,
+        string correlationId,
+        long actorUserId,
+        string actorRole)
+    {
+        var categoryChanged = before.Category != reclamation.Category
+            || !string.Equals(before.CategoryReason, reclamation.CategoryReason, StringComparison.Ordinal);
+        var reasonsChanged = !string.Equals(before.PriorityReasons, reclamation.PriorityReasons, StringComparison.Ordinal);
+        var priorityChanged = before.Priority != reclamation.Priority
+            || before.PriorityScore != reclamation.PriorityScore
+            || before.PrioritySource != reclamation.PrioritySource
+            || reasonsChanged;
+
+        if (categoryChanged)
+        {
+            _historyRepository.Add(new ReclamationHistory
+            {
+                ReclamationId = reclamation.Id,
+                FromStatus = reclamation.Status,
+                ToStatus = reclamation.Status,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                Comment = $"Category classified as {reclamation.Category}.",
+                OccurredAt = DateTime.UtcNow
+            });
+
+            await _outboxWriter.EnqueueAsync(new ReclamationClassifiedEvent
+            {
+                CorrelationId = correlationId,
+                ReclamationId = reclamation.Id,
+                Reference = reclamation.Reference,
+                Category = reclamation.Category.ToString().ToUpperInvariant(),
+                Reason = reclamation.CategoryReason,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                OccurredAt = DateTime.UtcNow
+            });
+        }
+
+        if (priorityChanged)
+        {
+            _historyRepository.Add(new ReclamationHistory
+            {
+                ReclamationId = reclamation.Id,
+                FromStatus = reclamation.Status,
+                ToStatus = reclamation.Status,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                Comment = $"Priority updated to {reclamation.Priority} (score {reclamation.PriorityScore}).",
+                OccurredAt = DateTime.UtcNow
+            });
+
+            await _outboxWriter.EnqueueAsync(new ReclamationPriorityUpdatedEvent
+            {
+                CorrelationId = correlationId,
+                ReclamationId = reclamation.Id,
+                Reference = reclamation.Reference,
+                Priority = reclamation.Priority.ToString().ToUpperInvariant(),
+                Severity = reclamation.Severity.ToString().ToUpperInvariant(),
+                PriorityScore = reclamation.PriorityScore,
+                PrioritySource = reclamation.PrioritySource.ToString().ToUpperInvariant(),
+                Reasons = DeserializeReasons(reclamation.PriorityReasons),
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                OccurredAt = DateTime.UtcNow
+            });
+        }
+
+        var clientEmail = _clientRepository.GetById(reclamation.ClientId)?.Email ?? string.Empty;
+        var slaTarget = GetActiveSlaTarget(reclamation);
+        var slaDeadline = GetActiveSlaDeadline(reclamation);
+
+        if (before.SlaStatus != reclamation.SlaStatus && reclamation.SlaStatus == SlaStatus.NearBreach && slaTarget is not null && slaDeadline.HasValue)
+        {
+            _historyRepository.Add(new ReclamationHistory
+            {
+                ReclamationId = reclamation.Id,
+                FromStatus = reclamation.Status,
+                ToStatus = reclamation.Status,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                Comment = $"SLA near breach on {slaTarget} ({slaDeadline.Value:u}).",
+                OccurredAt = DateTime.UtcNow
+            });
+
+            await _outboxWriter.EnqueueAsync(new SlaNearBreachDetectedEvent
+            {
+                CorrelationId = correlationId,
+                ReclamationId = reclamation.Id,
+                Reference = reclamation.Reference,
+                ClientId = reclamation.ClientId,
+                ClientEmail = clientEmail,
+                SavId = reclamation.SAVId,
+                SavName = reclamation.SAVName,
+                Priority = reclamation.Priority.ToString().ToUpperInvariant(),
+                SlaTarget = slaTarget,
+                DeadlineAt = slaDeadline.Value,
+                OccurredAt = DateTime.UtcNow
+            });
+        }
+
+        if (before.SlaStatus != reclamation.SlaStatus && reclamation.SlaStatus == SlaStatus.Breached && slaTarget is not null && slaDeadline.HasValue)
+        {
+            _historyRepository.Add(new ReclamationHistory
+            {
+                ReclamationId = reclamation.Id,
+                FromStatus = reclamation.Status,
+                ToStatus = reclamation.Status,
+                ActorUserId = actorUserId,
+                ActorRole = actorRole,
+                Comment = $"SLA breached on {slaTarget} ({slaDeadline.Value:u}).",
+                OccurredAt = DateTime.UtcNow
+            });
+
+            await _outboxWriter.EnqueueAsync(new SlaBreachedEvent
+            {
+                CorrelationId = correlationId,
+                ReclamationId = reclamation.Id,
+                Reference = reclamation.Reference,
+                ClientId = reclamation.ClientId,
+                ClientEmail = clientEmail,
+                SavId = reclamation.SAVId,
+                SavName = reclamation.SAVName,
+                Priority = reclamation.Priority.ToString().ToUpperInvariant(),
+                SlaTarget = slaTarget,
+                DeadlineAt = slaDeadline.Value,
+                BreachedAt = reclamation.SlaBreachedAt ?? DateTime.UtcNow,
+                OccurredAt = DateTime.UtcNow
+            });
+        }
+    }
+
+    private static OperationalState CaptureOperationalState(Reclamation reclamation)
+    {
+        return new OperationalState(
+            reclamation.Category,
+            reclamation.CategoryReason,
+            reclamation.Priority,
+            reclamation.PriorityScore,
+            reclamation.PrioritySource,
+            reclamation.PriorityReasons,
+            reclamation.SlaStatus);
+    }
+
+    private static DerivedState CaptureDerivedState(Reclamation reclamation)
+    {
+        return new DerivedState(
+            reclamation.Category,
+            reclamation.CategoryReason,
+            reclamation.Priority,
+            reclamation.PriorityScore,
+            reclamation.PrioritySource,
+            reclamation.PriorityReasons,
+            reclamation.FirstResponseDeadline,
+            reclamation.PlanningDeadline,
+            reclamation.ResolutionDeadline,
+            reclamation.SlaStatus,
+            reclamation.SlaBreachedAt);
+    }
+
+    private static bool HasDerivedStateChanged(DerivedState before, Reclamation reclamation)
+    {
+        return before.Category != reclamation.Category
+            || !string.Equals(before.CategoryReason, reclamation.CategoryReason, StringComparison.Ordinal)
+            || before.Priority != reclamation.Priority
+            || before.PriorityScore != reclamation.PriorityScore
+            || before.PrioritySource != reclamation.PrioritySource
+            || !string.Equals(before.PriorityReasons, reclamation.PriorityReasons, StringComparison.Ordinal)
+            || before.FirstResponseDeadline != reclamation.FirstResponseDeadline
+            || before.PlanningDeadline != reclamation.PlanningDeadline
+            || before.ResolutionDeadline != reclamation.ResolutionDeadline
+            || before.SlaStatus != reclamation.SlaStatus
+            || before.SlaBreachedAt != reclamation.SlaBreachedAt;
+    }
+
+    private static string SerializeReasons(IEnumerable<string> reasons)
+    {
+        return JsonSerializer.Serialize(reasons.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList());
+    }
+
+    private static List<string> DeserializeReasons(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return new List<string>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<string>>(value) ?? new List<string>();
+        }
+        catch
+        {
+            return new List<string> { value };
+        }
+    }
+
+    private static string? GetActiveSlaTarget(Reclamation reclamation)
+    {
+        return reclamation.Status switch
+        {
+            ReclamationStatus.Open => "FIRST_RESPONSE",
+            ReclamationStatus.Assigned => "PLANNING",
+            ReclamationStatus.Planned => "RESOLUTION",
+            ReclamationStatus.InProgress => "RESOLUTION",
+            _ => null
+        };
+    }
+
+    private static DateTime? GetActiveSlaDeadline(Reclamation reclamation)
+    {
+        return reclamation.Status switch
+        {
+            ReclamationStatus.Open => reclamation.FirstResponseDeadline,
+            ReclamationStatus.Assigned => reclamation.PlanningDeadline,
+            ReclamationStatus.Planned => reclamation.ResolutionDeadline,
+            ReclamationStatus.InProgress => reclamation.ResolutionDeadline,
+            _ => null
+        };
+    }
+
+    private static ReclamationPriorityDto ToPriorityDto(Reclamation reclamation)
+    {
+        return new ReclamationPriorityDto
+        {
+            ReclamationId = reclamation.Id,
+            Priority = reclamation.Priority,
+            Severity = reclamation.Severity,
+            PriorityScore = reclamation.PriorityScore,
+            PriorityReasons = DeserializeReasons(reclamation.PriorityReasons),
+            PrioritySource = reclamation.PrioritySource,
+            PriorityUpdatedAt = reclamation.PriorityUpdatedAt,
+            ManualPriorityOverride = reclamation.ManualPriorityOverride,
+            ManualPriorityOverrideReason = reclamation.ManualPriorityOverrideReason
+        };
+    }
+
+    private static ReclamationSlaDto ToSlaDto(Reclamation reclamation)
+    {
+        return new ReclamationSlaDto
+        {
+            ReclamationId = reclamation.Id,
+            SlaStatus = reclamation.SlaStatus,
+            FirstResponseDeadline = reclamation.FirstResponseDeadline,
+            PlanningDeadline = reclamation.PlanningDeadline,
+            ResolutionDeadline = reclamation.ResolutionDeadline,
+            SlaBreachedAt = reclamation.SlaBreachedAt,
+            ActiveTarget = GetActiveSlaTarget(reclamation),
+            ActiveDeadline = GetActiveSlaDeadline(reclamation)
+        };
+    }
+
+    private static void EnsurePriorityManagement(CurrentUser actor, Reclamation reclamation)
+    {
+        var role = NormalizeRole(actor.Role);
+        if (role == "ADMIN")
+        {
+            return;
+        }
+
+        if (role == "SAV" && (reclamation.Status == ReclamationStatus.Open || reclamation.SAVId == actor.UserId))
+        {
+            return;
+        }
+
+        throw new UnauthorizedAccessException();
+    }
+
+    private sealed record OperationalState(
+        TicketCategory Category,
+        string? CategoryReason,
+        NamePriority Priority,
+        int PriorityScore,
+        PrioritySource PrioritySource,
+        string? PriorityReasons,
+        SlaStatus SlaStatus);
+
+    private sealed record DerivedState(
+        TicketCategory Category,
+        string? CategoryReason,
+        NamePriority Priority,
+        int PriorityScore,
+        PrioritySource PrioritySource,
+        string? PriorityReasons,
+        DateTime? FirstResponseDeadline,
+        DateTime? PlanningDeadline,
+        DateTime? ResolutionDeadline,
+        SlaStatus SlaStatus,
+        DateTime? SlaBreachedAt);
 }
 
 

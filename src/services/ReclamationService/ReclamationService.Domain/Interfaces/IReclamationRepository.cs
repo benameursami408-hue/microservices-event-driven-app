@@ -7,6 +7,7 @@ namespace ReclamationService.Domain.Interfaces
     public interface IReclamationRepository
     {
         public List<Reclamation> GetAll();
+        public IQueryable<Reclamation> Query();
         public List<Reclamation> GetForClient(long clientId);
         public List<Reclamation> GetOpenBacklog();
         public List<Reclamation> GetForSav(long savId);

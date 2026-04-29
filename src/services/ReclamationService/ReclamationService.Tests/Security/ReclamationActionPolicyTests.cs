@@ -26,19 +26,19 @@ public class ReclamationActionPolicyTests
 
         var actions = ReclamationActionPolicy.GetAllowedActions(actor, item);
 
-        Assert.Contains(ReclamationActionPolicy.Plan, actions);
+        Assert.Contains(ReclamationActionPolicy.RequestPlanning, actions);
         Assert.Contains(ReclamationActionPolicy.Edit, actions);
+        Assert.Contains(ReclamationActionPolicy.RecalculatePriority, actions);
     }
 
     [Fact]
-    public void Technician_PlannedCase_CanStart()
+    public void Technician_PlannedCase_CannotClose()
     {
         var actor = new CurrentUser(30, "st@local", "Tech User", "ST", "corr-3");
         var item = CreateReclamation(clientId: 10, technicianId: 30, status: ReclamationStatus.Planned);
 
         var actions = ReclamationActionPolicy.GetAllowedActions(actor, item);
 
-        Assert.Contains(ReclamationActionPolicy.Start, actions);
         Assert.DoesNotContain(ReclamationActionPolicy.Close, actions);
     }
 

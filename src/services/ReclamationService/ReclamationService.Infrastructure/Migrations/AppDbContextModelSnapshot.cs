@@ -61,7 +61,25 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<DateTime?>("AssignedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Barcode")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Brand")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CategoryReason")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("CategoryUpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<long>("ClientId")
@@ -83,10 +101,41 @@ namespace ReclamationService.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<DateTime?>("FirstResponseDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FollowUpCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsBlocking")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastInterventionOutcome")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("LastInterventionReportSummary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("ManualPriorityOverride")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ManualPriorityOverrideReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime?>("PlannedEndAt")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("PlannedStartAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("PlanningDeadline")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("PlanningNote")
@@ -95,6 +144,38 @@ namespace ReclamationService.Infrastructure.Migrations
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
+
+                    b.Property<string>("PriorityReasons")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("PriorityScore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PrioritySource")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("PriorityUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProductImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ProductName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ProductReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("PurchaseDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PurchaseProofUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Reference")
                         .IsRequired()
@@ -107,6 +188,12 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("RequiresReplanning")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ResolutionDeadline")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("ResolutionNote")
                         .HasMaxLength(2000)
@@ -121,6 +208,23 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<string>("SAVName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SellerName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SerialNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SlaBreachedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SlaStatus")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");

@@ -20,6 +20,11 @@ namespace AuthService.Infrastructure.Repositories
             return _context.Users.ToList();
         }
 
+        public IQueryable<User> Query()
+        {
+            return _context.Users.AsNoTracking();
+        }
+
         public User? GetById(long id)
         {
             return _context.Users.FirstOrDefault(u => u.Id == id);

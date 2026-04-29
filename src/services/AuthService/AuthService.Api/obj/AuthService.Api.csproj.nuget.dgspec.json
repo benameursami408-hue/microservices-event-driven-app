@@ -1,17 +1,82 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Api\\AuthService.Api.csproj": {}
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Api\\AuthService.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Api\\AuthService.Api.csproj": {
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\SharedEvents.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Api\\AuthService.Api.csproj",
-        "projectName": "AuthService.Api",
-        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Api\\AuthService.Api.csproj",
+        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\SharedEvents.csproj",
+        "projectName": "SharedEvents",
+        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\SharedEvents.csproj",
         "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Api\\obj\\",
+        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\Sami\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net9.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net9.0": {
+            "targetAlias": "net9.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.100"
+      },
+      "frameworks": {
+        "net9.0": {
+          "targetAlias": "net9.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Api\\AuthService.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Api\\AuthService.Api.csproj",
+        "projectName": "AuthService.Api",
+        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Api\\AuthService.Api.csproj",
+        "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -32,11 +97,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj"
               },
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj"
               }
             }
           }
@@ -103,14 +168,14 @@
         }
       }
     },
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj",
+        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj",
         "projectName": "AuthService.Application",
-        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj",
+        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj",
         "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\obj\\",
+        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -131,11 +196,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\SharedEvents.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\building-blocks\\SharedEvents\\SharedEvents.csproj"
               },
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\SharedEvents.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\SharedEvents.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj"
               }
             }
           }
@@ -159,6 +224,10 @@
             "MassTransit": {
               "target": "Package",
               "version": "[8.5.8, )"
+            },
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[9.0.2, )"
             }
           },
           "imports": [
@@ -181,14 +250,14 @@
         }
       }
     },
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
         "projectName": "AuthService.Domain",
-        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
+        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
         "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\obj\\",
+        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -246,14 +315,14 @@
         }
       }
     },
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj": {
+    "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj",
         "projectName": "AuthService.Infrastructure",
-        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj",
+        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\AuthService.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Infrastructure\\obj\\",
+        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -274,11 +343,11 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Application\\AuthService.Application.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Application\\AuthService.Application.csproj"
               },
-              "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
-                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj"
+              "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj": {
+                "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj"
               }
             }
           }
@@ -326,71 +395,6 @@
               "version": "[8.16.0, )"
             }
           },
-          "imports": [
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48",
-            "net481"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
-        }
-      }
-    },
-    "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\SharedEvents.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\SharedEvents.csproj",
-        "projectName": "SharedEvents",
-        "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\SharedEvents.csproj",
-        "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\SharedEvents\\obj\\",
-        "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
-        "configFilePaths": [
-          "C:\\Users\\Sami\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
-        ],
-        "originalTargetFrameworks": [
-          "net8.0"
-        ],
-        "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
-        },
-        "frameworks": {
-          "net8.0": {
-            "targetAlias": "net8.0",
-            "projectReferences": {}
-          }
-        },
-        "warningProperties": {
-          "warnAsError": [
-            "NU1605"
-          ]
-        },
-        "restoreAuditProperties": {
-          "enableAudit": "true",
-          "auditLevel": "low",
-          "auditMode": "direct"
-        },
-        "SdkAnalysisLevel": "9.0.100"
-      },
-      "frameworks": {
-        "net8.0": {
-          "targetAlias": "net8.0",
           "imports": [
             "net461",
             "net462",

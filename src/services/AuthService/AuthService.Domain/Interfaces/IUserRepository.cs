@@ -5,6 +5,7 @@ namespace AuthService.Domain.Interfaces
     public interface IUserRepository
     {
         public List<User> GetAll();
+        public IQueryable<User> Query();
         public User? GetById(long id);
         public User? GetByEmail(string email);
         public Task<User?> GetByEmailAsync(string email);

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ztZkgldPz8Y=",
+  "dgSpecHash": "aoYKjtsWFOM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Sami\\Desktop\\pfe.net\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
+  "projectFilePath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\services\\AuthService\\AuthService.Domain\\AuthService.Domain.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

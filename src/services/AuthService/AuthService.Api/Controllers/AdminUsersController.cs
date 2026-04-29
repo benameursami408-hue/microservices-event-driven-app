@@ -36,4 +36,25 @@ public class AdminUsersController : ControllerBase
         var created = await _adminUsersService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetAll), new { id = created.Id }, created);
     }
+
+    [HttpPut("{id:long}")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<UserDto>> Update([FromRoute] long id, [FromBody] UpdateUserDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var updated = await _adminUsersService.UpdateAsync(id, dto);
+        return Ok(updated);
+    }
+
+    [HttpDelete("{id:long}")]
+    [Authorize(Roles = "ADMIN")]
+    public ActionResult Delete([FromRoute] long id)
+    {
+        _adminUsersService.Delete(id);
+        return NoContent();
+    }
 }

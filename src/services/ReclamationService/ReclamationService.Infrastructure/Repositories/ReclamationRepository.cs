@@ -28,6 +28,15 @@ namespace ReclamationService.Infrastructure.Repositories
             var reclamation = _context.Reclamations.FirstOrDefault(u => u.Id == id);
             if (reclamation != null)
             {
+                var history = _context.ReclamationHistories
+                    .Where(h => h.ReclamationId == id)
+                    .ToList();
+
+                if (history.Count != 0)
+                {
+                    _context.ReclamationHistories.RemoveRange(history);
+                }
+
                 _context.Reclamations.Remove(reclamation);
                 _context.SaveChanges();
             }
@@ -38,6 +47,11 @@ namespace ReclamationService.Infrastructure.Repositories
             return _context.Reclamations
                 .OrderByDescending(r => r.CreatedAt)
                 .ToList();
+        }
+
+        public IQueryable<Reclamation> Query()
+        {
+            return _context.Reclamations.AsNoTracking();
         }
 
         public List<Reclamation> GetForClient(long clientId)

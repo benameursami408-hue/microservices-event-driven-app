@@ -5,6 +5,99 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "AdminUsers"
+        ],
+        "parameters": [
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/UserRole"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "AdminUsers"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Auth/register": {
       "post": {
         "tags": [
@@ -80,7 +173,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/User"
+                    "$ref": "#/components/schemas/UserDto"
                   }
                 }
               },
@@ -88,7 +181,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/User"
+                    "$ref": "#/components/schemas/UserDto"
                   }
                 }
               },
@@ -96,54 +189,8 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/User"
+                    "$ref": "#/components/schemas/UserDto"
                   }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "User"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
                 }
               }
             }
@@ -173,81 +220,20 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/UserDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/UserDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/UserDto"
                 }
               }
             }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "User"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/User"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "User"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
           }
         }
       }
@@ -255,6 +241,56 @@
   },
   "components": {
     "schemas": {
+      "CreateUserDto": {
+        "required": [
+          "email",
+          "firstName",
+          "lastName",
+          "password",
+          "phoneNumber",
+          "role"
+        ],
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "lastName": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phoneNumber": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "format": "tel"
+          },
+          "address": {
+            "maxLength": 250,
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "minLength": 1,
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "minLength": 8,
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserRole"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
       "LoginDto": {
         "required": [
           "email",
@@ -280,8 +316,7 @@
           "firstName",
           "lastName",
           "password",
-          "phoneNumber",
-          "role"
+          "phoneNumber"
         ],
         "type": "object",
         "properties": {
@@ -314,22 +349,11 @@
           "password": {
             "minLength": 8,
             "type": "string"
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserRole"
           }
         },
         "additionalProperties": false
       },
-      "User": {
-        "required": [
-          "email",
-          "firstName",
-          "lastName",
-          "password",
-          "phoneNumber",
-          "role"
-        ],
+      "UserDto": {
         "type": "object",
         "properties": {
           "id": {
@@ -337,35 +361,24 @@
             "format": "int64"
           },
           "firstName": {
-            "maxLength": 50,
-            "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "lastName": {
-            "maxLength": 50,
-            "minLength": 1,
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "phoneNumber": {
-            "maxLength": 20,
-            "minLength": 1,
             "type": "string",
-            "format": "tel"
+            "nullable": true
           },
           "address": {
-            "maxLength": 250,
             "type": "string",
             "nullable": true
           },
           "email": {
-            "maxLength": 100,
-            "minLength": 1,
             "type": "string",
-            "format": "email"
-          },
-          "password": {
-            "minLength": 8,
-            "type": "string"
+            "nullable": true
           },
           "isActive": {
             "type": "boolean"
@@ -386,6 +399,19 @@
         "type": "integer",
         "format": "int32"
       }
+    },
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "description": "Enter: Bearer {your JWT token}",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     }
-  }
+  },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "version": 3,
   "targets": {
-    "net8.0": {
+    "net9.0": {
       "FluentValidation/12.1.1": {
         "type": "package",
         "compile": {
@@ -18,45 +18,45 @@
       "IPAddressRange/6.3.0": {
         "type": "package",
         "compile": {
-          "lib/net8.0/IPAddressRange.dll": {
+          "lib/net9.0/IPAddressRange.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/IPAddressRange.dll": {
+          "lib/net9.0/IPAddressRange.dll": {
             "related": ".xml"
           }
         }
       },
-      "Microsoft.AspNetCore.JsonPatch/8.0.22": {
+      "Microsoft.AspNetCore.JsonPatch/9.0.11": {
         "type": "package",
         "dependencies": {
           "Microsoft.CSharp": "4.7.0",
           "Newtonsoft.Json": "13.0.3"
         },
         "compile": {
-          "lib/net8.0/Microsoft.AspNetCore.JsonPatch.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.JsonPatch.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.JsonPatch.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.JsonPatch.dll": {
             "related": ".xml"
           }
         }
       },
-      "Microsoft.AspNetCore.MiddlewareAnalysis/8.0.22": {
+      "Microsoft.AspNetCore.MiddlewareAnalysis/9.0.11": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.11"
         },
         "compile": {
-          "lib/net8.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll": {
             "related": ".xml"
           }
         },
@@ -64,20 +64,20 @@
           "Microsoft.AspNetCore.App"
         ]
       },
-      "Microsoft.AspNetCore.Mvc.NewtonsoftJson/8.0.22": {
+      "Microsoft.AspNetCore.Mvc.NewtonsoftJson/9.0.11": {
         "type": "package",
         "dependencies": {
-          "Microsoft.AspNetCore.JsonPatch": "8.0.22",
+          "Microsoft.AspNetCore.JsonPatch": "9.0.11",
           "Newtonsoft.Json": "13.0.3",
           "Newtonsoft.Json.Bson": "1.0.2"
         },
         "compile": {
-          "lib/net8.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll": {
+          "lib/net9.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll": {
             "related": ".xml"
           }
         },
@@ -94,20 +94,20 @@
           "lib/netcoreapp2.0/_._": {}
         }
       },
-      "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+      "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.11": {
         "type": "package",
         "compile": {
-          "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+          "lib/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+          "lib/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
             "related": ".xml"
           }
         },
         "build": {
-          "buildTransitive/net6.0/_._": {}
+          "buildTransitive/net8.0/_._": {}
         }
       },
       "Microsoft.Extensions.DiagnosticAdapter/3.1.32": {
@@ -160,17 +160,17 @@
         "dependencies": {
           "FluentValidation": "12.1.1",
           "IPAddressRange": "6.3.0",
-          "Microsoft.AspNetCore.MiddlewareAnalysis": "8.0.22",
-          "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "8.0.22",
+          "Microsoft.AspNetCore.MiddlewareAnalysis": "9.0.11",
+          "Microsoft.AspNetCore.Mvc.NewtonsoftJson": "9.0.11",
           "Microsoft.Extensions.DiagnosticAdapter": "3.1.32"
         },
         "compile": {
-          "lib/net8.0/Ocelot.dll": {
+          "lib/net9.0/Ocelot.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Ocelot.dll": {
+          "lib/net9.0/Ocelot.dll": {
             "related": ".xml"
           }
         }
@@ -237,10 +237,10 @@
         "nupkg-icon.png"
       ]
     },
-    "Microsoft.AspNetCore.JsonPatch/8.0.22": {
-      "sha512": "gquk+JFVSXMJSHP/wWBgF6gYrwk616T6uJPaXvdXxBTRe43KTzuW0M+eMVlJsDH/lHGvItdjv47Y6uJ7WQVoSg==",
+    "Microsoft.AspNetCore.JsonPatch/9.0.11": {
+      "sha512": "Q+A8LiyaUBurFMSdAzKTpT8jEa9Sc8EsNK0sJEA6glRP4vVl7OGXLV07bfDhcVlFU2hUkn+6Ofmw7HQ0cJ1n1g==",
       "type": "package",
-      "path": "microsoft.aspnetcore.jsonpatch/8.0.22",
+      "path": "microsoft.aspnetcore.jsonpatch/9.0.11",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -248,41 +248,42 @@
         "THIRD-PARTY-NOTICES.TXT",
         "lib/net462/Microsoft.AspNetCore.JsonPatch.dll",
         "lib/net462/Microsoft.AspNetCore.JsonPatch.xml",
-        "lib/net8.0/Microsoft.AspNetCore.JsonPatch.dll",
-        "lib/net8.0/Microsoft.AspNetCore.JsonPatch.xml",
+        "lib/net9.0/Microsoft.AspNetCore.JsonPatch.dll",
+        "lib/net9.0/Microsoft.AspNetCore.JsonPatch.xml",
         "lib/netstandard2.0/Microsoft.AspNetCore.JsonPatch.dll",
         "lib/netstandard2.0/Microsoft.AspNetCore.JsonPatch.xml",
-        "microsoft.aspnetcore.jsonpatch.8.0.22.nupkg.sha512",
+        "microsoft.aspnetcore.jsonpatch.9.0.11.nupkg.sha512",
         "microsoft.aspnetcore.jsonpatch.nuspec"
       ]
     },
-    "Microsoft.AspNetCore.MiddlewareAnalysis/8.0.22": {
-      "sha512": "o3ntDd5INOweHlMwhezZOF/p3nyeVUvnGIEJHAXXUJ3JIOEg8HjmrAESvfai4mzFteZAsnojloxn0H5e+AbzHA==",
+    "Microsoft.AspNetCore.MiddlewareAnalysis/9.0.11": {
+      "sha512": "zqSw4kYn1j9fHvq6i/rLqETnYTIPHbHRIpmVjd+Ntzdb2AN2cEYaJ5247ay+uHePSUDQWtM/+M8h5ExmUYiV4A==",
       "type": "package",
-      "path": "microsoft.aspnetcore.middlewareanalysis/8.0.22",
+      "path": "microsoft.aspnetcore.middlewareanalysis/9.0.11",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "THIRD-PARTY-NOTICES.TXT",
-        "lib/net8.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll",
-        "lib/net8.0/Microsoft.AspNetCore.MiddlewareAnalysis.xml",
-        "microsoft.aspnetcore.middlewareanalysis.8.0.22.nupkg.sha512",
+        "lib/net9.0/Microsoft.AspNetCore.MiddlewareAnalysis.dll",
+        "lib/net9.0/Microsoft.AspNetCore.MiddlewareAnalysis.xml",
+        "microsoft.aspnetcore.middlewareanalysis.9.0.11.nupkg.sha512",
         "microsoft.aspnetcore.middlewareanalysis.nuspec"
       ]
     },
-    "Microsoft.AspNetCore.Mvc.NewtonsoftJson/8.0.22": {
-      "sha512": "jSMF5XkqtWvFyvyVJFKrgmGhMh1sDKzIHa+S4WVXa1AY/F0Wou+uFbjO1DPlHt/TWdsWhuhVI1nF0yqIgxRrKQ==",
+    "Microsoft.AspNetCore.Mvc.NewtonsoftJson/9.0.11": {
+      "sha512": "xbpMq5ptjbTivpGz76NQ80Z3Oy204ndTJGoUdQB+vF0DOoii/loz1gr/q2KdFdloAFXju0v4lTiWEhGcIKmtyQ==",
       "type": "package",
-      "path": "microsoft.aspnetcore.mvc.newtonsoftjson/8.0.22",
+      "path": "microsoft.aspnetcore.mvc.newtonsoftjson/9.0.11",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
+        "PACKAGE.md",
         "THIRD-PARTY-NOTICES.TXT",
-        "lib/net8.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll",
-        "lib/net8.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.xml",
-        "microsoft.aspnetcore.mvc.newtonsoftjson.8.0.22.nupkg.sha512",
+        "lib/net9.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.dll",
+        "lib/net9.0/Microsoft.AspNetCore.Mvc.NewtonsoftJson.xml",
+        "microsoft.aspnetcore.mvc.newtonsoftjson.9.0.11.nupkg.sha512",
         "microsoft.aspnetcore.mvc.newtonsoftjson.nuspec"
       ]
     },
@@ -355,10 +356,10 @@
         "version.txt"
       ]
     },
-    "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
-      "sha512": "3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg==",
+    "Microsoft.Extensions.DependencyInjection.Abstractions/9.0.11": {
+      "sha512": "+ZxxZzcVU+IEzq12GItUzf/V3mEc5nSLiXijwvDc4zyhbjvSZZ043giSZqGnhakrjwRWjkerIHPrRwm9okEIpw==",
       "type": "package",
-      "path": "microsoft.extensions.dependencyinjection.abstractions/8.0.2",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/9.0.11",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -368,21 +369,19 @@
         "THIRD-PARTY-NOTICES.TXT",
         "buildTransitive/net461/Microsoft.Extensions.DependencyInjection.Abstractions.targets",
         "buildTransitive/net462/_._",
-        "buildTransitive/net6.0/_._",
+        "buildTransitive/net8.0/_._",
         "buildTransitive/netcoreapp2.0/Microsoft.Extensions.DependencyInjection.Abstractions.targets",
         "lib/net462/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/net462/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
-        "lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
-        "lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
-        "lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
-        "lib/net7.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
+        "lib/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+        "lib/net9.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
-        "microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
+        "microsoft.extensions.dependencyinjection.abstractions.9.0.11.nupkg.sha512",
         "microsoft.extensions.dependencyinjection.abstractions.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -502,7 +501,7 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net8.0": [
+    "net9.0": [
       "Ocelot >= 24.1.0"
     ]
   },
@@ -513,11 +512,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\ApiGateway\\ApiGateway.csproj",
+      "projectUniqueName": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\gateway\\ApiGateway\\ApiGateway.csproj",
       "projectName": "ApiGateway",
-      "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\ApiGateway\\ApiGateway.csproj",
+      "projectPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\gateway\\ApiGateway\\ApiGateway.csproj",
       "packagesPath": "C:\\Users\\Sami\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\ApiGateway\\obj\\",
+      "outputPath": "C:\\Users\\Sami\\Desktop\\pfe.net\\src\\gateway\\ApiGateway\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -528,15 +527,15 @@
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
-        "net8.0"
+        "net9.0"
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net8.0": {
-          "targetAlias": "net8.0",
+        "net9.0": {
+          "targetAlias": "net9.0",
           "projectReferences": {}
         }
       },
@@ -553,8 +552,8 @@
       "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
-      "net8.0": {
-        "targetAlias": "net8.0",
+      "net9.0": {
+        "targetAlias": "net9.0",
         "dependencies": {
           "Ocelot": {
             "target": "Package",

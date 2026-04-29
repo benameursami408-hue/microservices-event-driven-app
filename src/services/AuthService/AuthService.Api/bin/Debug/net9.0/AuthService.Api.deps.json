@@ -10,7 +10,7 @@
         "dependencies": {
           "AuthService.Application": "1.0.0",
           "AuthService.Infrastructure": "1.0.0",
-          "MassTransit.RabbitMQ": "9.0.1",
+          "MassTransit.RabbitMQ": "8.5.8",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "9.0.2",
           "Microsoft.AspNetCore.OpenApi": "9.0.2",
           "Microsoft.EntityFrameworkCore.Design": "9.0.2",
@@ -71,9 +71,9 @@
           }
         }
       },
-      "MassTransit/9.0.1": {
+      "MassTransit/8.5.8": {
         "dependencies": {
-          "MassTransit.Abstractions": "9.0.1",
+          "MassTransit.Abstractions": "8.5.8",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.2",
           "Microsoft.Extensions.Diagnostics.HealthChecks": "9.0.0",
           "Microsoft.Extensions.Hosting.Abstractions": "9.0.0",
@@ -82,28 +82,28 @@
         },
         "runtime": {
           "lib/net9.0/MassTransit.dll": {
-            "assemblyVersion": "9.0.1.0",
-            "fileVersion": "9.0.1.0"
+            "assemblyVersion": "8.5.8.0",
+            "fileVersion": "8.5.8.0"
           }
         }
       },
-      "MassTransit.Abstractions/9.0.1": {
+      "MassTransit.Abstractions/8.5.8": {
         "runtime": {
           "lib/net9.0/MassTransit.Abstractions.dll": {
-            "assemblyVersion": "9.0.1.0",
-            "fileVersion": "9.0.1.0"
+            "assemblyVersion": "8.5.8.0",
+            "fileVersion": "8.5.8.0"
           }
         }
       },
-      "MassTransit.RabbitMQ/9.0.1": {
+      "MassTransit.RabbitMQ/8.5.8": {
         "dependencies": {
-          "MassTransit": "9.0.1",
+          "MassTransit": "8.5.8",
           "RabbitMQ.Client": "7.2.0"
         },
         "runtime": {
           "lib/net9.0/MassTransit.RabbitMqTransport.dll": {
-            "assemblyVersion": "9.0.1.0",
-            "fileVersion": "9.0.1.0"
+            "assemblyVersion": "8.5.8.0",
+            "fileVersion": "8.5.8.0"
           }
         }
       },
@@ -1170,7 +1170,8 @@
       "AuthService.Application/1.0.0": {
         "dependencies": {
           "AuthService.Domain": "1.0.0",
-          "MassTransit": "9.0.1",
+          "MassTransit": "8.5.8",
+          "Microsoft.EntityFrameworkCore": "9.0.2",
           "SharedEvents": "1.0.0"
         },
         "runtime": {
@@ -1249,26 +1250,26 @@
       "path": "humanizer.core/2.14.1",
       "hashPath": "humanizer.core.2.14.1.nupkg.sha512"
     },
-    "MassTransit/9.0.1": {
+    "MassTransit/8.5.8": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-wYMV/TX9AQqG9ybG7i97Et2rjPgIYXmYr3RV5k7ogr/BvPnAF8ohcmeESoTYSgQFWDi2lurKx57uPg1MJ9R0jw==",
-      "path": "masstransit/9.0.1",
-      "hashPath": "masstransit.9.0.1.nupkg.sha512"
+      "sha512": "sha512-O5bx+rziwwjLnar/9R6HTSL3Q++SOX20sufGIuXCKh7aowQ+4XGbhpVdaSYuTV7H0ndIomK24d2/vX3rlsSHng==",
+      "path": "masstransit/8.5.8",
+      "hashPath": "masstransit.8.5.8.nupkg.sha512"
     },
-    "MassTransit.Abstractions/9.0.1": {
+    "MassTransit.Abstractions/8.5.8": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-Rh3Bj/8VOdaUat2Zepbe1cfqQ+20Pqd9zoUme8w50qXISZ9p6yuxBXNNBazS16TN6Kfd4FLxuMUtjY928Rxqdw==",
-      "path": "masstransit.abstractions/9.0.1",
-      "hashPath": "masstransit.abstractions.9.0.1.nupkg.sha512"
+      "sha512": "sha512-f1XJz88+JZNLl1iHWSGNoD91ownowoP4Vl+2DmVM7ljAxQebvolVKdlyY+iZBSdODCeyLGCcM9jrfZXWkDHtow==",
+      "path": "masstransit.abstractions/8.5.8",
+      "hashPath": "masstransit.abstractions.8.5.8.nupkg.sha512"
     },
-    "MassTransit.RabbitMQ/9.0.1": {
+    "MassTransit.RabbitMQ/8.5.8": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-/ZfrA97Y9vlTkaRAekJrPm/bLj20RJbZLvxrphCHg1aVKWK4v9RiMj2g4TFFYHybaOQk+L5kNxAS8bZ3WQg1Iw==",
-      "path": "masstransit.rabbitmq/9.0.1",
-      "hashPath": "masstransit.rabbitmq.9.0.1.nupkg.sha512"
+      "sha512": "sha512-Ds7qUC0top6Ncg9I5JdRnSeM+mVqkass2D59QR9/97rg9tkqI9Xh4faMYmmJTY7vh9ixfMwt1LHf0PzsFpGO1g==",
+      "path": "masstransit.rabbitmq/8.5.8",
+      "hashPath": "masstransit.rabbitmq.8.5.8.nupkg.sha512"
     },
     "Microsoft.AspNetCore.Authentication.JwtBearer/9.0.2": {
       "type": "package",
