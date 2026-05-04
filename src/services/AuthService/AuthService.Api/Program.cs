@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using AuthService.Infrastructure.Data;
 using AuthService.Application.Services;
@@ -12,6 +14,8 @@ using MassTransit;
 using AuthService.Application.Outbox;
 using AuthService.Infrastructure.Outbox;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Mvc;
+using AuthService.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 const string localDevelopmentUrl = "http://localhost:5165";
@@ -48,12 +52,39 @@ builder.Services.AddMassTransit(x =>
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
         });
 
+        cfg.UseMessageRetry(retry => retry.Exponential(
+            retryLimit: 3,
+            minInterval: TimeSpan.FromSeconds(1),
+            maxInterval: TimeSpan.FromSeconds(30),
+            intervalDelta: TimeSpan.FromSeconds(2)));
+
         cfg.ConfigureEndpoints(context);
     });
 });
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(entry => entry.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    entry => entry.Key,
+                    entry => entry.Value!.Errors.Select(error =>
+                        string.IsNullOrWhiteSpace(error.ErrorMessage)
+                            ? "Invalid value."
+                            : error.ErrorMessage).ToArray());
+
+            return new BadRequestObjectResult(new ValidationProblemDetails(errors)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation failed",
+                Detail = "One or more fields are invalid."
+            });
+        };
+    });
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -124,11 +155,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
 
 builder.Services.AddAuthorization();
+
+var authRateLimitPermit = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:PermitLimit") ?? 10;
+var authRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:WindowSeconds") ?? 60;
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("AuthSensitive", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = authRateLimitPermit,
+                Window = TimeSpan.FromSeconds(authRateLimitWindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
+
 
 var jwtSecret = builder.Configuration["Jwt:SecretKey"];
 if (!builder.Environment.IsDevelopment()
@@ -138,6 +188,9 @@ if (!builder.Environment.IsDevelopment()
 }
 
 var app = builder.Build();
+
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 if (localUrlOverrideReason is not null)
 {
@@ -158,10 +211,47 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+app.MapGet("/health/live", () => Results.Ok(new { status = "Live", service = "AuthService" })).AllowAnonymous();
+app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    var sqlHealthy = false;
+    string? sqlError = null;
+    try
+    {
+        sqlHealthy = await dbContext.Database.CanConnectAsync(cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        sqlError = ex.Message;
+    }
+
+    var rabbitHostConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Host"]);
+    var rabbitUserConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Username"]);
+    var rabbitPasswordConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Password"]);
+    var ready = sqlHealthy && rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured;
+
+    var response = new
+    {
+        status = ready ? "Ready" : "NotReady",
+        service = "AuthService",
+        checks = new
+        {
+            sqlServer = sqlHealthy ? "Healthy" : "Unhealthy",
+            sqlError,
+            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured ? "Configured" : "MissingConfiguration"
+        }
+    };
+
+    IResult result = ready
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+    return result;
+}).AllowAnonymous();
 
 app.MapControllers();
 
@@ -196,7 +286,7 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
         using var seedScope = app.Services.CreateScope();
         var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var passwordHasher = seedScope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        await TestDataSeeder.SeedUsersAsync(seedDbContext, passwordHasher, logger);
+        await TestDataSeeder.SeedUsersAsync(seedDbContext, passwordHasher, logger, app.Configuration, app.Environment);
     }
 
     using var outboxScope = app.Services.CreateScope();

@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using AuthService.Application.DTOs;
 using AuthService.Application.Services;
 using AuthService.Domain.Enums;
@@ -28,11 +30,6 @@ public class AdminUsersController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<UserDto>> Create([FromBody] CreateUserDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var created = await _adminUsersService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetAll), new { id = created.Id }, created);
     }
@@ -41,11 +38,6 @@ public class AdminUsersController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public async Task<ActionResult<UserDto>> Update([FromRoute] long id, [FromBody] UpdateUserDto dto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
         var updated = await _adminUsersService.UpdateAsync(id, dto);
         return Ok(updated);
     }
@@ -54,7 +46,16 @@ public class AdminUsersController : ControllerBase
     [Authorize(Roles = "ADMIN")]
     public ActionResult Delete([FromRoute] long id)
     {
-        _adminUsersService.Delete(id);
+        _adminUsersService.Delete(id, GetCurrentUserId());
         return NoContent();
+    }
+
+    private long? GetCurrentUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? User.FindFirstValue("sub");
+
+        return long.TryParse(value, out var userId) ? userId : null;
     }
 }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using AuthService.Application.DTOs;
 using AuthService.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [EnableRateLimiting("AuthSensitive")]
     public async Task<IActionResult> Register([FromBody] RegisterDto request)
     {
         if (!ModelState.IsValid)
@@ -28,6 +30,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("AuthSensitive")]
     public async Task<IActionResult> Login([FromBody] LoginDto request)
     {
         if (!ModelState.IsValid)

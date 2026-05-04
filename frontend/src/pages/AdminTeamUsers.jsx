@@ -15,6 +15,7 @@ import TextField from '../components/TextField.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import LayoutAdmin from '../layouts/LayoutAdmin.jsx'
 import { createUser, deleteUser, listUsers, updateUser } from '../services/adminUsers.service.js'
+import { validateAdminUserForm } from '../utils/adminUserValidation.js'
 import { roleLabel } from '../utils/enums.js'
 
 const ROLE_OPTIONS = [
@@ -165,26 +166,13 @@ export default function AdminTeamUsers({ roleKey, title, description }) {
     setFormError('')
     setFormSuccess('')
 
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.phoneNumber.trim()) {
-      setFormError('Veuillez remplir tous les champs obligatoires.')
+    const validation = validateAdminUserForm(form, { editing: Boolean(editingId), fixedRole: roleKey })
+    if (!validation.ok) {
+      setFormError(validation.message)
       return
     }
 
-    if (!editingId && !form.password.trim()) {
-      setFormError('Le mot de passe est obligatoire pour un nouvel utilisateur.')
-      return
-    }
-
-    const payload = {
-      firstName: form.firstName,
-      lastName: form.lastName,
-      email: form.email,
-      phoneNumber: form.phoneNumber,
-      address: form.address,
-      password: form.password,
-      role: roleKey || form.role,
-      isActive: form.isActive === 'true',
-    }
+    const payload = validation.value
 
     setSubmitting(true)
 
@@ -396,7 +384,7 @@ export default function AdminTeamUsers({ roleKey, title, description }) {
         open={modalOpen}
         onClose={closeModal}
         title={editingId ? 'Modifier un utilisateur' : 'Ajouter un utilisateur'}
-        description="Les champs obligatoires sont clairement identifies et le payload est nettoye avant envoi."
+        description="Les champs obligatoires sont valides avant envoi pour eviter les erreurs 400."
       >
         <form className="grid grid-cols-1 gap-4 lg:grid-cols-2" onSubmit={handleSubmit}>
           <TextField
@@ -441,7 +429,7 @@ export default function AdminTeamUsers({ roleKey, title, description }) {
             value={form.password}
             onChange={(event) => updateFormField('password', event.target.value)}
             required={!editingId}
-            hint={editingId ? 'Le mot de passe vide n est pas envoye au backend.' : undefined}
+            hint={editingId ? 'Laisser vide pour garder le mot de passe actuel. Minimum 8 caracteres si renseigne.' : 'Minimum 8 caracteres.'}
           />
 
           {!roleKey ? (

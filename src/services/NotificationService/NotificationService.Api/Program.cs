@@ -8,6 +8,7 @@ using NotificationService.Domain.Interfaces;
 using NotificationService.Infrastructure.Data;
 using NotificationService.Infrastructure.Repositories;
 using NotificationService.Infrastructure.Services;
+using NotificationService.Api.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -42,6 +43,12 @@ builder.Services.AddMassTransit(x =>
             h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
         });
+
+        cfg.UseMessageRetry(retry => retry.Exponential(
+            retryLimit: 3,
+            minInterval: TimeSpan.FromSeconds(1),
+            maxInterval: TimeSpan.FromSeconds(30),
+            intervalDelta: TimeSpan.FromSeconds(2)));
 
         cfg.ConfigureEndpoints(context);
     });
@@ -108,7 +115,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
 
@@ -129,6 +137,9 @@ if (!builder.Environment.IsDevelopment()
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -144,6 +155,42 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+app.MapGet("/health/live", () => Results.Ok(new { status = "Live", service = "NotificationService" })).AllowAnonymous();
+app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    var sqlHealthy = false;
+    string? sqlError = null;
+    try
+    {
+        sqlHealthy = await dbContext.Database.CanConnectAsync(cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        sqlError = ex.Message;
+    }
+
+    var rabbitHostConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Host"]);
+    var rabbitUserConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Username"]);
+    var rabbitPasswordConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Password"]);
+    var ready = sqlHealthy && rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured;
+
+    var response = new
+    {
+        status = ready ? "Ready" : "NotReady",
+        service = "NotificationService",
+        checks = new
+        {
+            sqlServer = sqlHealthy ? "Healthy" : "Unhealthy",
+            sqlError,
+            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured ? "Configured" : "MissingConfiguration"
+        }
+    };
+
+    IResult result = ready
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+    return result;
+}).AllowAnonymous();
 
 app.MapControllers();
 

@@ -45,6 +45,12 @@ builder.Services.AddMassTransit(x =>
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
         });
 
+        cfg.UseMessageRetry(retry => retry.Exponential(
+            retryLimit: 3,
+            minInterval: TimeSpan.FromSeconds(1),
+            maxInterval: TimeSpan.FromSeconds(30),
+            intervalDelta: TimeSpan.FromSeconds(2)));
+
         cfg.ConfigureEndpoints(context);
     });
 });
@@ -105,7 +111,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
 
@@ -124,6 +131,9 @@ builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -136,6 +146,42 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health");
+app.MapGet("/health/live", () => Results.Ok(new { status = "Live", service = "InterventionService" })).AllowAnonymous();
+app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    var sqlHealthy = false;
+    string? sqlError = null;
+    try
+    {
+        sqlHealthy = await dbContext.Database.CanConnectAsync(cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        sqlError = ex.Message;
+    }
+
+    var rabbitHostConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Host"]);
+    var rabbitUserConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Username"]);
+    var rabbitPasswordConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Password"]);
+    var ready = sqlHealthy && rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured;
+
+    var response = new
+    {
+        status = ready ? "Ready" : "NotReady",
+        service = "InterventionService",
+        checks = new
+        {
+            sqlServer = sqlHealthy ? "Healthy" : "Unhealthy",
+            sqlError,
+            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured ? "Configured" : "MissingConfiguration"
+        }
+    };
+
+    IResult result = ready
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+    return result;
+}).AllowAnonymous();
 app.MapControllers();
 
 if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))

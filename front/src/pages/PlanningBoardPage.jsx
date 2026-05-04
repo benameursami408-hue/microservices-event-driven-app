@@ -62,7 +62,7 @@ export default function PlanningBoardPage() {
         setPlanningRequestId(String(requestData[0].id))
       }
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to load planning.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Impossible de charger le planning.')
     } finally {
       setLoading(false)
     }
@@ -92,7 +92,7 @@ export default function PlanningBoardPage() {
       setPlanningNote('')
       await load()
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to create appointment.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Impossible de creer le rendez-vous.')
     }
   }
 
@@ -112,7 +112,7 @@ export default function PlanningBoardPage() {
       toast.success('Technician assigned.')
       await load()
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to assign technician.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Impossible d affecter le technicien.')
     } finally {
       setBusyId(null)
     }
@@ -125,7 +125,7 @@ export default function PlanningBoardPage() {
       toast.success('Appointment confirmed.')
       await load()
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to confirm appointment.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Impossible de confirmer le rendez-vous.')
     } finally {
       setBusyId(null)
     }
@@ -134,7 +134,7 @@ export default function PlanningBoardPage() {
   if (loading) {
     return (
       <div className="surface-solid p-8">
-        <Spinner label="Loading planning board..." />
+        <Spinner label="Chargement du planning..." />
       </div>
     )
   }
@@ -155,15 +155,15 @@ export default function PlanningBoardPage() {
         actions={
           <Button variant="secondary" onClick={load}>
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Refresh
+            Actualiser
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <MetricCard icon={CalendarDays} label="Planning requests" value={requests.length} helper="Demandes a traiter" tone="amber" />
-        <MetricCard icon={UserCheck} label="Appointments" value={appointments.length} helper="Cartes planifiees ou confirmees" tone="cyan" />
-        <MetricCard icon={RefreshCw} label="Technicians" value={technicians.length} helper="Capacite chargee dans la vue" tone="emerald" />
+        <MetricCard icon={UserCheck} label="Rendez-vous" value={appointments.length} helper="Cartes planifiees ou confirmees" tone="cyan" />
+        <MetricCard icon={RefreshCw} label="Techniciens" value={technicians.length} helper="Capacite chargee dans la vue" tone="emerald" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_1fr]">
@@ -183,7 +183,7 @@ export default function PlanningBoardPage() {
             <TextField label="Start at" type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
             <TextField label="End at" type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} />
             <TextField
-              label="Estimated duration (min)"
+              label="Duree estimee (min)"
               type="number"
               min="15"
               step="15"
@@ -201,7 +201,7 @@ export default function PlanningBoardPage() {
 
         <div className="space-y-6">
           <div className="surface-solid p-6">
-            <div className="section-title">Pending planning requests</div>
+            <div className="section-title">Demandes de planification en attente</div>
             {requests.length === 0 ? (
               <div className="mt-3 text-sm text-slate-600">No planning requests yet.</div>
             ) : (
@@ -233,12 +233,12 @@ export default function PlanningBoardPage() {
                       key={capacity.technicianId}
                       className={`rounded-[24px] border p-4 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.3)] ${overload ? 'border-rose-200 bg-rose-50' : 'border-slate-200 bg-white'}`}
                     >
-                      <div className="text-sm font-semibold text-slate-900">Technician #{capacity.technicianId}</div>
+                      <div className="text-sm font-semibold text-slate-900">Technicien #{capacity.technicianId}</div>
                       <div className="mt-2 text-xs text-slate-600">
-                        Day: {capacity.dailyAssignedAppointments}/{capacity.dailyMaxAppointments} appointments - {capacity.dailyLoadPercent}%
+                        Jour: {capacity.dailyAssignedAppointments}/{capacity.dailyMaxAppointments} rendez-vous - {capacity.dailyLoadPercent}%
                       </div>
                       <div className="mt-1 text-xs text-slate-600">
-                        Week: {capacity.weeklyAssignedAppointments}/{capacity.weeklyMaxAppointments} appointments - {capacity.weeklyLoadPercent}%
+                        Semaine: {capacity.weeklyAssignedAppointments}/{capacity.weeklyMaxAppointments} rendez-vous - {capacity.weeklyLoadPercent}%
                       </div>
                     </div>
                   )
@@ -248,9 +248,9 @@ export default function PlanningBoardPage() {
           </div>
 
           <div className="surface-solid p-6">
-            <div className="section-title">Appointments</div>
+            <div className="section-title">Rendez-vous</div>
             {appointments.length === 0 ? (
-              <EmptyState title="No appointments" description="Create the first appointment from a planning request." />
+              <EmptyState title="Aucun rendez-vous" description="Creez le premier rendez-vous depuis une demande de planification." />
             ) : (
               <div className="mt-4 space-y-4">
                 {appointments.map((appointment) => (
@@ -296,11 +296,11 @@ function AppointmentCard({ appointment, technicians, capacities, busy, onAssign,
         Technician: {appointment.technicianName || 'Unassigned'}
       </div>
       <div className="mt-1 text-xs text-slate-500">
-        Estimated duration: {appointment.estimatedDurationMinutes || 0} minutes
+        Duree estimee: {appointment.estimatedDurationMinutes || 0} minutes
       </div>
       {selectedCapacity ? (
         <div className="mt-2 text-xs text-slate-600">
-          Capacity today: {selectedCapacity.dailyAssignedAppointments}/{selectedCapacity.dailyMaxAppointments} - {selectedCapacity.dailyLoadPercent}%
+          Capacite du jour: {selectedCapacity.dailyAssignedAppointments}/{selectedCapacity.dailyMaxAppointments} - {selectedCapacity.dailyLoadPercent}%
         </div>
       ) : null}
 

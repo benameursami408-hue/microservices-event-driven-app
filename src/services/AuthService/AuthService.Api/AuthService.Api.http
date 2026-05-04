@@ -1,6 +1,43 @@
-@AuthService.Api_HostAddress = http://localhost:5165
+@Gateway_HostAddress = http://localhost:5005
+@AuthService_HostAddress = http://localhost:5165
+@Token = paste-admin-jwt-here
 
-GET {{AuthService.Api_HostAddress}}/weatherforecast/
+### Admin users - list all users through gateway
+GET {{Gateway_HostAddress}}/api/admin/users
+Authorization: Bearer {{Token}}
 Accept: application/json
 
-###
+### Admin users - create SAV user through gateway
+POST {{Gateway_HostAddress}}/api/admin/users
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "SAV",
+  "phoneNumber": "+216 22 000 000",
+  "address": "Tunis",
+  "email": "test.sav@sav.local",
+  "password": "SavTest!123",
+  "role": 1,
+  "isActive": true
+}
+
+### Admin users - update user through gateway, password omitted to keep current password
+PUT {{Gateway_HostAddress}}/api/admin/users/1
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "firstName": "Test",
+  "lastName": "SAV Updated",
+  "phoneNumber": "+216 22 000 001",
+  "address": "Tunis",
+  "email": "test.sav@sav.local",
+  "role": 1,
+  "isActive": true
+}
+
+### Admin users - delete user through gateway
+DELETE {{Gateway_HostAddress}}/api/admin/users/1
+Authorization: Bearer {{Token}}

@@ -6,7 +6,7 @@ export const UserRole = {
 }
 
 export function roleLabel(role) {
-  if (role == null) return 'Unknown'
+  if (role == null) return 'Inconnu'
 
   if (typeof role === 'string') {
     const normalized = role.toUpperCase()
@@ -61,7 +61,7 @@ export const SlaStatus = {
 }
 
 export function reclamationStatusLabel(value) {
-  if (value == null) return 'Unknown'
+  if (value == null) return 'Inconnu'
 
   if (typeof value === 'string') {
     const normalized = value.toUpperCase()
@@ -200,11 +200,14 @@ export function slaStatusBadgeClasses(value) {
 export function notificationStatusLabel(value) {
   switch (value) {
     case 0:
-      return 'Pending'
+    case 'Pending':
+      return 'En attente'
     case 1:
-      return 'Sent'
+    case 'Sent':
+      return 'Envoyee'
     case 2:
-      return 'Failed'
+    case 'Failed':
+      return 'Echec'
     default:
       return String(value)
   }

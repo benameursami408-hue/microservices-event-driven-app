@@ -48,7 +48,7 @@ export default function TechnicianAgendaPage() {
         }
       }
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to load technician workspace.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Impossible de charger l espace technicien.')
     } finally {
       setLoading(false)
     }
@@ -65,7 +65,7 @@ export default function TechnicianAgendaPage() {
       toast.success(successMessage)
       await load()
     } catch (error) {
-      toast.error(error?.response?.data?.detail || error?.message || 'Action failed.')
+      toast.error(error?.response?.data?.detail || error?.message || 'Action impossible.')
     } finally {
       setBusyId(null)
     }
@@ -74,7 +74,7 @@ export default function TechnicianAgendaPage() {
   if (loading) {
     return (
       <div className="surface-solid p-8">
-        <Spinner label="Loading technician agenda..." />
+        <Spinner label="Chargement de l agenda technicien..." />
       </div>
     )
   }
@@ -82,7 +82,7 @@ export default function TechnicianAgendaPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Technician workspace"
+        eyebrow="Espace technicien"
         title="Agenda et execution d'intervention"
         description="Les informations importantes sont mieux distinguees entre visites confirmees, charge quotidienne et actions terrain disponibles."
         meta={
@@ -95,38 +95,38 @@ export default function TechnicianAgendaPage() {
         actions={
           <Button variant="secondary" onClick={load}>
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
-            Refresh
+            Actualiser
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <MetricCard icon={RefreshCw} label="Appointments" value={appointments.length} helper="Rendez-vous confirms visibles" tone="cyan" />
+        <MetricCard icon={RefreshCw} label="Rendez-vous" value={appointments.length} helper="Rendez-vous confirmes visibles" tone="cyan" />
         <MetricCard icon={Play} label="Interventions" value={interventions.length} helper="Dossiers techniques a executer" tone="amber" />
         <MetricCard
           icon={CheckCircle2}
-          label="Daily load"
+          label="Charge du jour"
           value={capacity ? `${capacity.dailyLoadPercent}%` : '—'}
-          helper={capacity ? `${capacity.dailyAssignedAppointments}/${capacity.dailyMaxAppointments} today` : 'Capacity unavailable'}
+          helper={capacity ? `${capacity.dailyAssignedAppointments}/${capacity.dailyMaxAppointments} aujourd hui` : 'Capacite indisponible'}
           tone={capacity && capacity.dailyLoadPercent >= 100 ? 'rose' : 'emerald'}
         />
       </div>
 
       <div className="surface-solid p-6">
-        <div className="section-title">Confirmed appointments</div>
+        <div className="section-title">Rendez-vous confirmes</div>
         {capacity ? (
           <div className="mt-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm">
-            <div className="font-semibold text-slate-900">Today capacity</div>
+            <div className="font-semibold text-slate-900">Capacite du jour</div>
             <div className="mt-1 text-slate-700">
-              {capacity.dailyAssignedAppointments}/{capacity.dailyMaxAppointments} appointments - {capacity.dailyLoadPercent}%
+              {capacity.dailyAssignedAppointments}/{capacity.dailyMaxAppointments} rendez-vous - {capacity.dailyLoadPercent}%
             </div>
             <div className="mt-1 text-slate-600">
-              Week: {capacity.weeklyAssignedAppointments}/{capacity.weeklyMaxAppointments} appointments - {capacity.weeklyLoadPercent}%
+              Semaine: {capacity.weeklyAssignedAppointments}/{capacity.weeklyMaxAppointments} rendez-vous - {capacity.weeklyLoadPercent}%
             </div>
           </div>
         ) : null}
         {appointments.length === 0 ? (
-          <div className="mt-3 text-sm text-slate-600">No appointment assigned yet.</div>
+          <div className="mt-3 text-sm text-slate-600">Aucun rendez-vous affecte pour le moment.</div>
         ) : (
           <div className="mt-4 space-y-3">
             {appointments.map((appointment) => (
@@ -137,7 +137,7 @@ export default function TechnicianAgendaPage() {
                   {appointment.endAt ? ` -> ${formatDateTime(appointment.endAt)}` : ''}
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
-                  Estimated duration: {appointment.estimatedDurationMinutes || 0} minutes
+                  Duree estimee: {appointment.estimatedDurationMinutes || 0} minutes
                 </div>
                 <div className="mt-2">
                   <Badge className="bg-sky-50 text-sky-700 ring-sky-200">{appointment.status}</Badge>
@@ -149,9 +149,9 @@ export default function TechnicianAgendaPage() {
       </div>
 
       <div className="surface-solid p-6">
-        <div className="section-title">My interventions</div>
+        <div className="section-title">Mes interventions</div>
         {interventions.length === 0 ? (
-          <EmptyState title="No interventions" description="An intervention will appear here after an appointment is confirmed." />
+          <EmptyState title="Aucune intervention" description="Une intervention apparaitra ici apres confirmation d un rendez-vous." />
         ) : (
           <div className="mt-4 space-y-4">
             {interventions.map((intervention) => (
@@ -159,11 +159,11 @@ export default function TechnicianAgendaPage() {
                 key={intervention.id}
                 intervention={intervention}
                 busy={busyId === intervention.id}
-                onStart={() => run(intervention.id, () => startIntervention(intervention.id), 'Intervention started.')}
-                onPause={() => run(intervention.id, () => pauseIntervention(intervention.id), 'Intervention paused.')}
-                onDiagnostic={(payload) => run(intervention.id, () => addDiagnostic(intervention.id, payload), 'Diagnostic saved.')}
-                onComplete={(payload) => run(intervention.id, () => completeIntervention(intervention.id, payload), 'Intervention completed.')}
-                onPublish={(payload) => run(intervention.id, () => publishReport(intervention.id, payload), 'Visit report published.')}
+                onStart={() => run(intervention.id, () => startIntervention(intervention.id), 'Intervention demarree.')}
+                onPause={() => run(intervention.id, () => pauseIntervention(intervention.id), 'Intervention mise en pause.')}
+                onDiagnostic={(payload) => run(intervention.id, () => addDiagnostic(intervention.id, payload), 'Diagnostic enregistre.')}
+                onComplete={(payload) => run(intervention.id, () => completeIntervention(intervention.id, payload), 'Intervention terminee.')}
+                onPublish={(payload) => run(intervention.id, () => publishReport(intervention.id, payload), 'Rapport de visite publie.')}
               />
             ))}
           </div>
@@ -186,7 +186,7 @@ function InterventionCard({ intervention, busy, onStart, onPause, onDiagnostic, 
         <div>
           <div className="font-display text-lg font-bold text-slate-950">{intervention.reference}</div>
           <div className="mt-1 text-sm text-slate-600">
-            Started: {intervention.startedAt ? formatDateTime(intervention.startedAt) : 'Not started'}
+            Demarrage: {intervention.startedAt ? formatDateTime(intervention.startedAt) : 'Non demarree'}
           </div>
         </div>
         <Badge className="bg-amber-50 text-amber-800 ring-amber-200">{intervention.status}</Badge>

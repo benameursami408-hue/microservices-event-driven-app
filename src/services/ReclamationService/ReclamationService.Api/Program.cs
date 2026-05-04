@@ -1,3 +1,5 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ReclamationService.Infrastructure.Data;
 using ReclamationService.Domain.Interfaces;
@@ -36,6 +38,12 @@ builder.Services.AddMassTransit(x =>
             h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
             h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
         });
+
+        cfg.UseMessageRetry(retry => retry.Exponential(
+            retryLimit: 3,
+            minInterval: TimeSpan.FromSeconds(1),
+            maxInterval: TimeSpan.FromSeconds(30),
+            intervalDelta: TimeSpan.FromSeconds(2)));
 
         cfg.ConfigureEndpoints(context);
     });
@@ -101,11 +109,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ClockSkew = TimeSpan.FromMinutes(2)
         };
     });
 
 builder.Services.AddAuthorization();
+
+var uploadRateLimitPermit = builder.Configuration.GetValue<int?>("Security:UploadRateLimit:PermitLimit") ?? 20;
+var uploadRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("Security:UploadRateLimit:WindowSeconds") ?? 60;
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("Uploads", httpContext =>
+    {
+        var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: userId,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = uploadRateLimitPermit,
+                Window = TimeSpan.FromSeconds(uploadRateLimitWindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
+
 
 var jwtSecret = builder.Configuration["Jwt:SecretKey"];
 if (!builder.Environment.IsDevelopment()
@@ -129,6 +162,9 @@ builder.Services.AddHostedService<SlaMonitorWorker>();
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -140,10 +176,47 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+app.MapGet("/health/live", () => Results.Ok(new { status = "Live", service = "ReclamationService" })).AllowAnonymous();
+app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration configuration, CancellationToken cancellationToken) =>
+{
+    var sqlHealthy = false;
+    string? sqlError = null;
+    try
+    {
+        sqlHealthy = await dbContext.Database.CanConnectAsync(cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        sqlError = ex.Message;
+    }
+
+    var rabbitHostConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Host"]);
+    var rabbitUserConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Username"]);
+    var rabbitPasswordConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Password"]);
+    var ready = sqlHealthy && rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured;
+
+    var response = new
+    {
+        status = ready ? "Ready" : "NotReady",
+        service = "ReclamationService",
+        checks = new
+        {
+            sqlServer = sqlHealthy ? "Healthy" : "Unhealthy",
+            sqlError,
+            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured ? "Configured" : "MissingConfiguration"
+        }
+    };
+
+    IResult result = ready
+        ? Results.Ok(response)
+        : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+    return result;
+}).AllowAnonymous();
 
 app.MapControllers();
 

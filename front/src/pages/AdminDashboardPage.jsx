@@ -129,6 +129,9 @@ export default function AdminDashboardPage() {
           <Link to="/app/reclamations">
             <Button variant="secondary">Ouvrir les tickets SAV</Button>
           </Link>
+          <Link to="/app/guide-test">
+            <Button variant="secondary">Guide de test</Button>
+          </Link>
         </div>
       }
     >
@@ -177,6 +180,12 @@ export default function AdminDashboardPage() {
               title="Tickets SAV"
               description="Basculer tout de suite sur la liste principale des reclamations."
               actionLabel="Tickets"
+            />
+            <QuickAction
+              to="/app/guide-test"
+              title="Guide de test"
+              description="Suivre le scenario complet pour la demonstration et la validation manuelle."
+              actionLabel="Demo"
             />
           </div>
         </section>

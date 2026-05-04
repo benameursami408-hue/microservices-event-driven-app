@@ -41,7 +41,7 @@ export default function NotificationsPage() {
       setItems(Array.isArray(data) ? data : [])
     } catch (err) {
       const message = err?.response?.data?.detail || err?.message
-      setError(message || 'Failed to load notifications.')
+      setError(message || 'Impossible de charger les notifications.')
     } finally {
       setLoading(false)
     }
@@ -57,7 +57,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Notification center"
+        eyebrow="Centre de notifications"
         title="Flux d'evenements et alertes"
         description="Le fil de notifications devient plus lisible avec une meilleure hierarchie des cartes, des badges plus explicites et des actions de lecture plus visibles."
         meta={
@@ -71,7 +71,7 @@ export default function NotificationsPage() {
           <>
             <Button variant="secondary" onClick={load} disabled={loading}>
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              Refresh
+              Actualiser
             </Button>
             <Button
               variant="secondary"
@@ -84,15 +84,15 @@ export default function NotificationsPage() {
                       current.map((n) => (n.isRead ? n : { ...n, isRead: true, readAt: new Date().toISOString() })),
                     )
                   }
-                  toast.success('Marked all as read.')
+                  toast.success('Toutes les notifications sont marquees comme lues.')
                 } catch {
-                  toast.error('Failed to mark notifications as read.')
+                  toast.error('Impossible de marquer les notifications comme lues.')
                 }
               }}
               disabled={items.length === 0}
             >
               <CheckCheck className="h-4 w-4" aria-hidden="true" />
-              Mark all read
+              Tout marquer lu
             </Button>
           </>
         }
@@ -100,13 +100,13 @@ export default function NotificationsPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <MetricCard icon={Bell} label="Total" value={items.length} helper="Dernieres notifications recues" tone="cyan" />
-        <MetricCard icon={CheckCheck} label="Unread" value={unreadCount} helper="A traiter ou consulter" tone={unreadCount ? 'amber' : 'emerald'} />
-        <MetricCard icon={MailWarning} label="Failed" value={failedCount} helper="Notifications non envoyees" tone={failedCount ? 'rose' : 'slate'} />
+        <MetricCard icon={CheckCheck} label="Non lues" value={unreadCount} helper="A traiter ou consulter" tone={unreadCount ? 'amber' : 'emerald'} />
+        <MetricCard icon={MailWarning} label="Echecs" value={failedCount} helper="Notifications non envoyees" tone={failedCount ? 'rose' : 'slate'} />
       </div>
 
       {loading ? (
         <div className="surface-solid p-8">
-          <Spinner label="Loading notifications..." />
+          <Spinner label="Chargement des notifications..." />
         </div>
       ) : error ? (
         <div className="surface-solid p-6">
@@ -115,8 +115,8 @@ export default function NotificationsPage() {
       ) : items.length === 0 ? (
         <EmptyState
           icon={Bell}
-          title="No notifications"
-          description="Create a user or a reclamation to generate events."
+          title="Aucune notification"
+          description="Creez un utilisateur ou une reclamation pour generer des evenements."
         />
       ) : (
         <div className="space-y-4">
@@ -131,22 +131,22 @@ export default function NotificationsPage() {
                     />
                     <div className="font-display text-xl font-bold text-slate-950">{n.title || n.type}</div>
                     <Badge className={statusClasses(n.status)}>{notificationStatusLabel(n.status)}</Badge>
-                    {!n.isRead ? <Badge className="bg-cyan-50 text-cyan-800 ring-cyan-200">UNREAD</Badge> : null}
+                    {!n.isRead ? <Badge className="bg-cyan-50 text-cyan-800 ring-cyan-200">NON LUE</Badge> : null}
                     {n.type ? <Badge className="bg-slate-50 text-slate-700 ring-slate-200">{n.type}</Badge> : null}
                   </div>
 
                   <div className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">{n.message}</div>
 
                   <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
-                    <MetaItem label="Created" value={formatDateTime(n.createdAt)} />
-                    <MetaItem label="Sent" value={formatDateTime(n.sentAt)} />
-                    <MetaItem label="Read" value={formatDateTime(n.readAt)} />
-                    <MetaItem label="Recipient" value={n.recipientEmail || '-'} />
+                    <MetaItem label="Creation" value={formatDateTime(n.createdAt)} />
+                    <MetaItem label="Envoi" value={formatDateTime(n.sentAt)} />
+                    <MetaItem label="Lecture" value={formatDateTime(n.readAt)} />
+                    <MetaItem label="Destinataire" value={n.recipientEmail || '-'} />
                   </div>
 
                   {n.sourceEvent ? (
                     <div className="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-xs text-slate-600">
-                      <span className="font-semibold text-slate-900">Source event:</span> {n.sourceEvent}
+                      <span className="font-semibold text-slate-900">Evenement source:</span> {n.sourceEvent}
                     </div>
                   ) : null}
                 </div>
@@ -161,13 +161,13 @@ export default function NotificationsPage() {
                         setItems((current) =>
                           current.map((it) => (it.id === n.id ? { ...it, isRead: true, readAt: new Date().toISOString() } : it)),
                         )
-                        toast.success('Marked as read.')
+                        toast.success('Notification marquee comme lue.')
                       } catch {
-                        toast.error('Failed to mark as read.')
+                        toast.error('Impossible de marquer comme lue.')
                       }
                     }}
                   >
-                    Mark read
+                    Marquer lu
                   </Button>
                 </div>
               </div>

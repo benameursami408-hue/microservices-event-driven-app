@@ -1,5 +1,6 @@
 import {
   Bell,
+  BookOpenCheck,
   ClipboardCheck,
   LayoutDashboard,
   MessageSquareWarning,
@@ -33,6 +34,12 @@ function buildSections({ role }) {
           description: 'Comprendre rapidement quoi tester',
           icon: LayoutDashboard,
           end: true,
+        },
+        {
+          to: '/app/guide-test',
+          label: 'Guide de test',
+          description: 'Parcours conseille pour la demo',
+          icon: BookOpenCheck,
         },
         {
           to: '/app/reclamations',
@@ -127,6 +134,14 @@ function buildSections({ role }) {
 }
 
 function resolveHeader(pathname) {
+  if (pathname.startsWith('/app/guide-test')) {
+    return {
+      sectionLabel: 'Guide',
+      title: 'Guide de test',
+      description: 'Parcours clair pour tester et presenter toute la plateforme SAV.',
+    }
+  }
+
   if (pathname.startsWith('/app/admin/users')) {
     return {
       sectionLabel: 'Administration',

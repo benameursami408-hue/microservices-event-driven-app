@@ -4,7 +4,7 @@ services:
       context: ./src
       dockerfile: gateway/ApiGateway/Dockerfile
     ports:
-      - "127.0.0.1:5000:8080"
+      - "127.0.0.1:${GATEWAY_HTTP_PORT:-5005}:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
     depends_on:
@@ -17,7 +17,7 @@ services:
       intervention-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -31,7 +31,7 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_PID=Developer
-      - MSSQL_SA_PASSWORD=${SA_PASSWORD:-PfeNet!2026Strong}
+      - MSSQL_SA_PASSWORD=${SA_PASSWORD:-ChangeMe_SqlServer_2026!}
     volumes:
       - sqlserver-data:/var/opt/mssql
     healthcheck:
@@ -49,7 +49,7 @@ services:
       - "127.0.0.1:15672:15672" # Management UI port
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-pfe}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-PfeNetRabbit!2026}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -68,26 +68,28 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=AuthDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=AuthDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
-      - Jwt__SecretKey=${JWT_SECRET:-PfeNetJwtSecretKey_2026_Auth_Reclamation_Notification_01}
+      - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
       - Seed__AdminEmail=${SEED_ADMIN_EMAIL:-admin@local}
-      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:-Admin123!}
+      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:-ChangeMe_Admin_2026!}
       - Seed__AdminFirstName=${SEED_ADMIN_FIRSTNAME:-Admin}
       - Seed__AdminLastName=${SEED_ADMIN_LASTNAME:-User}
       - Seed__AdminPhoneNumber=${SEED_ADMIN_PHONE:-0000000000}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
-      - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
+      - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
+      - Security__AuthRateLimit__PermitLimit=${AUTH_RATE_LIMIT_PER_MINUTE:-10}
+      - Security__AuthRateLimit__WindowSeconds=60
     depends_on:
       sqlserver:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -103,21 +105,23 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
-      - Jwt__SecretKey=${JWT_SECRET:-PfeNetJwtSecretKey_2026_Auth_Reclamation_Notification_01}
+      - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
-      - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
+      - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
+      - Security__UploadRateLimit__PermitLimit=${UPLOAD_RATE_LIMIT_PER_MINUTE:-20}
+      - Security__UploadRateLimit__WindowSeconds=60
     depends_on:
       sqlserver:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -133,22 +137,22 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Notifications__AdminEmail=${NOTIFICATIONS_ADMIN_EMAIL:-admin@local}
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
-      - Jwt__SecretKey=${JWT_SECRET:-PfeNetJwtSecretKey_2026_Auth_Reclamation_Notification_01}
+      - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
-      - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
+      - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
     depends_on:
       sqlserver:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -164,20 +168,20 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
-      - ConnectionStrings__DBConnection=Server=sqlserver;Database=InterventionDB;User Id=sa;Password=${SA_PASSWORD:-PfeNet!2026Strong};TrustServerCertificate=True;Encrypt=False
+      - ConnectionStrings__DBConnection=Server=sqlserver;Database=InterventionDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
-      - Jwt__SecretKey=${JWT_SECRET:-PfeNetJwtSecretKey_2026_Auth_Reclamation_Notification_01}
+      - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
-      - RabbitMQ__Password=${RABBITMQ_PASS:-PfeNetRabbit!2026}
+      - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
     depends_on:
       sqlserver:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 10

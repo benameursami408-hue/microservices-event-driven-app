@@ -19,7 +19,7 @@ export default function Header({ title, description, sectionLabel, roleLabel, on
 
       <div className="flex flex-wrap items-center gap-2">
         <StatusBadge kind="role" value={roleLabel} />
-        <StatusBadge label="Responsive ready" tone="success" />
+        <StatusBadge label="Interface responsive" tone="success" />
       </div>
     </header>
   )

@@ -59,6 +59,15 @@ public class OutboxDispatcher : BackgroundService
 
         foreach (var message in pending)
         {
+            using var logScope = _logger.BeginScope(new Dictionary<string, object?>
+            {
+                ["CorrelationId"] = message.CorrelationId,
+                ["EventId"] = message.Id,
+                ["EventType"] = message.EventType,
+                ["EventVersion"] = message.EventVersion,
+                ["Producer"] = message.Producer
+            });
+
             try
             {
                 var clrType = Type.GetType(message.ClrType, throwOnError: false);
@@ -73,21 +82,42 @@ public class OutboxDispatcher : BackgroundService
                     throw new InvalidOperationException($"Failed to deserialize payload for {message.ClrType}");
                 }
 
+                _logger.LogInformation(
+                    "Dispatching outbox message {EventId} ({EventType}) v{EventVersion} from {Producer}",
+                    message.Id,
+                    message.EventType,
+                    message.EventVersion,
+                    message.Producer);
+
                 await publishEndpoint.Publish(payload, cancellationToken);
                 message.ProcessedAt = DateTime.UtcNow;
                 message.LastError = null;
+                _logger.LogInformation("Dispatched outbox message {EventId} ({EventType}) successfully", message.Id, message.EventType);
             }
             catch (Exception ex)
             {
                 message.RetryCount += 1;
                 var error = ex.Message;
                 message.LastError = error.Length > 1900 ? error[..1900] : error;
-                _logger.LogWarning(
-                    ex,
-                    "Failed to dispatch intervention outbox message {EventId} ({EventType}), retry {RetryCount}",
-                    message.Id,
-                    message.EventType,
-                    message.RetryCount);
+                if (message.RetryCount >= MaxRetries)
+                {
+                    message.LastError = $"[DEADLETTER_AFTER_{MaxRetries}_RETRIES] {message.LastError}";
+                    _logger.LogError(
+                        ex,
+                        "Intervention outbox message {EventId} ({EventType}) reached the retry limit and is now a logical dead-letter. Inspect OutboxMessages.LastError.",
+                        message.Id,
+                        message.EventType);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to dispatch intervention outbox message {EventId} ({EventType}), retry {RetryCount}/{MaxRetries}",
+                        message.Id,
+                        message.EventType,
+                        message.RetryCount,
+                        MaxRetries);
+                }
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

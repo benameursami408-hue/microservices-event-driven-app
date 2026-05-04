@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ReclamationService.API.Controllers;
 
 [ApiController]
 [Route("api/reclamations/upload")]
 [Authorize]
+[EnableRateLimiting("Uploads")]
 public class ReclamationUploadsController : ControllerBase
 {
+    private const long MaxUploadBytes = 10 * 1024 * 1024;
+
     private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".webp", ".gif"
@@ -19,41 +23,41 @@ public class ReclamationUploadsController : ControllerBase
     };
 
     [HttpPost]
-    [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<ActionResult<object>> Upload([FromQuery] string kind = "image", IFormFile? file = null)
+    [RequestSizeLimit(MaxUploadBytes)]
+    public async Task<ActionResult<object>> Upload([FromQuery] string kind = "image", IFormFile? file = null, CancellationToken cancellationToken = default)
     {
         if (file == null || file.Length == 0)
         {
             return BadRequest("File is required.");
         }
 
-        if (file.Length > 10 * 1024 * 1024)
+        if (file.Length > MaxUploadBytes)
         {
             return BadRequest("File is too large. Max 10 MB.");
         }
 
-        var extension = Path.GetExtension(file.FileName);
         var isImage = string.Equals(kind, "image", StringComparison.OrdinalIgnoreCase);
-        var allowed = isImage ? ImageExtensions : ProofExtensions;
+        var isProof = string.Equals(kind, "proof", StringComparison.OrdinalIgnoreCase);
+        if (!isImage && !isProof)
+        {
+            return BadRequest("Invalid upload kind. Use image or proof.");
+        }
 
-        if (!allowed.Contains(extension))
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var allowed = isImage ? ImageExtensions : ProofExtensions;
+        if (string.IsNullOrWhiteSpace(extension) || !allowed.Contains(extension))
         {
             return BadRequest("Unsupported file type.");
         }
 
-        if (isImage && (file.ContentType == null || !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)))
+        if (!IsAllowedContentType(file.ContentType, extension, isImage))
         {
-            return BadRequest("Invalid image type.");
+            return BadRequest(isImage ? "Invalid image type." : "Invalid proof type.");
         }
 
-        if (!isImage && file.ContentType != null)
+        if (!await HasAllowedSignatureAsync(file, extension, cancellationToken))
         {
-            var ok = file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase);
-            if (!ok)
-            {
-                return BadRequest("Invalid proof type.");
-            }
+            return BadRequest("The file content does not match the declared file type.");
         }
 
         var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
@@ -65,7 +69,7 @@ public class ReclamationUploadsController : ControllerBase
 
         await using (var stream = System.IO.File.Create(fullPath))
         {
-            await file.CopyToAsync(stream);
+            await file.CopyToAsync(stream, cancellationToken);
         }
 
         var url = $"/uploads/reclamations/{fileName}";
@@ -76,5 +80,44 @@ public class ReclamationUploadsController : ControllerBase
             size = file.Length,
             contentType = file.ContentType
         });
+    }
+
+    private static bool IsAllowedContentType(string? contentType, string extension, bool isImage)
+    {
+        if (string.IsNullOrWhiteSpace(contentType)) return false;
+
+        var normalized = contentType.Split(';')[0].Trim().ToLowerInvariant();
+        if (isImage)
+        {
+            return extension switch
+            {
+                ".jpg" or ".jpeg" => normalized is "image/jpeg" or "image/pjpeg",
+                ".png" => normalized == "image/png",
+                ".gif" => normalized == "image/gif",
+                ".webp" => normalized == "image/webp",
+                _ => false
+            };
+        }
+
+        return extension == ".pdf"
+            ? normalized == "application/pdf"
+            : IsAllowedContentType(contentType, extension, isImage: true);
+    }
+
+    private static async Task<bool> HasAllowedSignatureAsync(IFormFile file, string extension, CancellationToken cancellationToken)
+    {
+        var buffer = new byte[16];
+        await using var stream = file.OpenReadStream();
+        var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken);
+
+        return extension switch
+        {
+            ".jpg" or ".jpeg" => read >= 3 && buffer[0] == 0xFF && buffer[1] == 0xD8 && buffer[2] == 0xFF,
+            ".png" => read >= 8 && buffer[0] == 0x89 && buffer[1] == 0x50 && buffer[2] == 0x4E && buffer[3] == 0x47 && buffer[4] == 0x0D && buffer[5] == 0x0A && buffer[6] == 0x1A && buffer[7] == 0x0A,
+            ".gif" => read >= 6 && buffer[0] == 0x47 && buffer[1] == 0x49 && buffer[2] == 0x46 && buffer[3] == 0x38 && (buffer[4] == 0x37 || buffer[4] == 0x39) && buffer[5] == 0x61,
+            ".webp" => read >= 12 && buffer[0] == 0x52 && buffer[1] == 0x49 && buffer[2] == 0x46 && buffer[3] == 0x46 && buffer[8] == 0x57 && buffer[9] == 0x45 && buffer[10] == 0x42 && buffer[11] == 0x50,
+            ".pdf" => read >= 5 && buffer[0] == 0x25 && buffer[1] == 0x50 && buffer[2] == 0x44 && buffer[3] == 0x46 && buffer[4] == 0x2D,
+            _ => false
+        };
     }
 }

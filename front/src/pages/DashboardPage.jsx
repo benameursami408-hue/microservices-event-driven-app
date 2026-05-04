@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom'
 
 import Button from '../components/Button.jsx'
 import MetricCard from '../components/MetricCard.jsx'
+import RoleNextSteps from '../components/RoleNextSteps.jsx'
 import StatusBadge from '../components/StatusBadge.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import { roleLabel } from '../utils/enums.js'
@@ -59,6 +60,13 @@ export default function DashboardPage() {
           },
         ]
       : []),
+    {
+      to: '/app/guide-test',
+      icon: LayoutDashboard,
+      title: 'Suivre le guide de test',
+      description: 'Voir le scenario complet pour comprendre quoi tester selon chaque role.',
+      actionLabel: 'Guide',
+    },
     {
       to: '/app/notifications',
       icon: Bell,
@@ -131,6 +139,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      <RoleNextSteps role={user?.role} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard icon={LayoutDashboard} label="Profil connecte" value={roleLabel(user?.role)} helper="Navigation adaptee au role" tone="cyan" />

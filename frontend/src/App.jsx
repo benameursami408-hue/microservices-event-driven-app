@@ -4,6 +4,7 @@ import PrivateRoute from './components/PrivateRoute.jsx'
 import AppLayout from './layouts/AppLayout.jsx'
 import AuthLayout from './layouts/AuthLayout.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
+import DemoGuidePage from './pages/DemoGuidePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
@@ -31,6 +32,7 @@ export default function App() {
       <Route element={<PrivateRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/app" element={<DashboardPage />} />
+          <Route path="/app/guide-test" element={<DemoGuidePage />} />
           <Route path="/app/admin" element={<AdminDashboardPage />} />
           <Route path="/app/admin/users" element={<AdminUsersPage />} />
           <Route path="/app/admin/sav" element={<AdminSavPage />} />

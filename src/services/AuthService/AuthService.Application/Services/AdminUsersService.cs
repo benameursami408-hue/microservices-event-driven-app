@@ -3,6 +3,7 @@ using AuthService.Application.Exceptions;
 using AuthService.Application.Interfaces;
 using AuthService.Application.Mappers;
 using AuthService.Application.Outbox;
+using AuthService.Domain.Entities;
 using AuthService.Domain.Enums;
 using AuthService.Domain.Interfaces;
 using SharedEvents.Events;
@@ -39,6 +40,8 @@ public class AdminUsersService
 
     public async Task<UserDto> CreateAsync(CreateUserDto request)
     {
+        NormalizeCreateRequest(request);
+
         var existing = await _userRepository.GetByEmailAsync(request.Email);
         if (existing != null)
         {
@@ -67,6 +70,8 @@ public class AdminUsersService
 
     public async Task<UserDto> UpdateAsync(long id, UpdateUserDto request)
     {
+        NormalizeUpdateRequest(request);
+
         var existing = _userRepository.GetById(id);
         if (existing == null)
         {
@@ -79,25 +84,24 @@ public class AdminUsersService
             throw new BadRequestException("This email is already registered.");
         }
 
-        existing.FirstName = request.FirstName;
-        existing.LastName = request.LastName;
-        existing.PhoneNumber = request.PhoneNumber;
-        existing.Address = request.Address;
-        existing.Email = request.Email;
-        existing.Role = request.Role;
-        existing.IsActive = request.IsActive;
+        ApplyCommonFields(existing, request);
 
         if (!string.IsNullOrWhiteSpace(request.Password))
         {
-            existing.Password = _passwordHasher.Hash(request.Password);
+            existing.Password = _passwordHasher.Hash(request.Password.Trim());
         }
 
         _userRepository.Update(existing);
         return existing.ToDto();
     }
 
-    public void Delete(long id)
+    public void Delete(long id, long? currentUserId = null)
     {
+        if (currentUserId.HasValue && currentUserId.Value == id)
+        {
+            throw new BadRequestException("You cannot delete your own admin account.");
+        }
+
         var existing = _userRepository.GetById(id);
         if (existing == null)
         {
@@ -133,5 +137,58 @@ public class AdminUsersService
             ByRole = byRole.OrderBy(x => x.Role).ToList(),
             ActiveByRole = activeByRole.OrderBy(x => x.Role).ToList()
         };
+    }
+
+    private static void NormalizeCreateRequest(CreateUserDto request)
+    {
+        request.FirstName = NormalizeRequiredText(request.FirstName, nameof(request.FirstName));
+        request.LastName = NormalizeRequiredText(request.LastName, nameof(request.LastName));
+        request.PhoneNumber = NormalizeRequiredText(request.PhoneNumber, nameof(request.PhoneNumber));
+        request.Address = NormalizeOptionalText(request.Address);
+        request.Email = NormalizeEmail(request.Email);
+        request.Password = request.Password.Trim();
+    }
+
+    private static void NormalizeUpdateRequest(UpdateUserDto request)
+    {
+        request.FirstName = NormalizeRequiredText(request.FirstName, nameof(request.FirstName));
+        request.LastName = NormalizeRequiredText(request.LastName, nameof(request.LastName));
+        request.PhoneNumber = NormalizeRequiredText(request.PhoneNumber, nameof(request.PhoneNumber));
+        request.Address = NormalizeOptionalText(request.Address);
+        request.Email = NormalizeEmail(request.Email);
+        request.Password = string.IsNullOrWhiteSpace(request.Password) ? null : request.Password.Trim();
+    }
+
+    private static void ApplyCommonFields(User existing, UpdateUserDto request)
+    {
+        existing.FirstName = request.FirstName;
+        existing.LastName = request.LastName;
+        existing.PhoneNumber = request.PhoneNumber;
+        existing.Address = request.Address;
+        existing.Email = request.Email;
+        existing.Role = request.Role;
+        existing.IsActive = request.IsActive;
+    }
+
+    private static string NormalizeEmail(string value)
+    {
+        var normalized = NormalizeRequiredText(value, "Email").ToLowerInvariant();
+        return normalized;
+    }
+
+    private static string NormalizeRequiredText(string? value, string fieldName)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new BadRequestException($"{fieldName} is required.");
+        }
+
+        return normalized;
+    }
+
+    private static string NormalizeOptionalText(string? value)
+    {
+        return value?.Trim() ?? string.Empty;
     }
 }

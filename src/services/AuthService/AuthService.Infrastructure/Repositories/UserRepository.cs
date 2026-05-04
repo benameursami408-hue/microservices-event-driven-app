@@ -1,4 +1,4 @@
-﻿using AuthService.Domain.Entities;
+using AuthService.Domain.Entities;
 using AuthService.Domain.Interfaces;
 using AuthService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -32,12 +32,14 @@ namespace AuthService.Infrastructure.Repositories
 
         public User? GetByEmail(string email)
         {
-            return _context.Users.FirstOrDefault(u => u.Email == email);
+            var normalizedEmail = NormalizeEmail(email);
+            return _context.Users.FirstOrDefault(u => u.Email.ToLower() == normalizedEmail);
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var normalizedEmail = NormalizeEmail(email);
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
         }
 
         public User? GetByPhoneNumber(string phoneNumber)
@@ -74,6 +76,11 @@ namespace AuthService.Infrastructure.Repositories
                 _context.Users.Remove(user);
                 _context.SaveChanges();
             }
+        }
+
+        private static string NormalizeEmail(string email)
+        {
+            return email.Trim().ToLowerInvariant();
         }
     }
 }

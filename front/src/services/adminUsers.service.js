@@ -8,30 +8,46 @@ const ROLE_ALIASES = {
   'AFTER SALES': 'SAV',
   TECHNICIEN: 'ST',
   TECHNICIAN: 'ST',
+  TECHNIQUE: 'ST',
 }
 
 function normalizeRole(role) {
-  if (role == null) return role
-  if (typeof role === 'number') return role
+  if (role == null || role === '') return undefined
+
+  if (typeof role === 'number') {
+    if (Object.values(UserRole).includes(role)) return role
+    throw new Error(`Role invalide: ${role}`)
+  }
 
   const normalized = String(role).trim().toUpperCase()
   const roleKey = ROLE_ALIASES[normalized] ?? normalized
-  return UserRole[roleKey]
+  const roleValue = UserRole[roleKey]
+
+  if (roleValue == null) {
+    throw new Error(`Role invalide: ${role}`)
+  }
+
+  return roleValue
+}
+
+function normalizeBoolean(value) {
+  if (typeof value === 'boolean') return value
+  return String(value).toLowerCase() === 'true'
 }
 
 function buildUserPayload(payload, { omitEmptyPassword = false } = {}) {
   const normalized = {
     firstName: payload.firstName?.trim() ?? '',
     lastName: payload.lastName?.trim() ?? '',
-    email: payload.email?.trim() ?? '',
+    email: payload.email?.trim().toLowerCase() ?? '',
     phoneNumber: payload.phoneNumber?.trim() ?? '',
     address: payload.address?.trim() ?? '',
     role: normalizeRole(payload.role),
-    isActive: Boolean(payload.isActive),
+    isActive: normalizeBoolean(payload.isActive),
   }
 
-  const password = typeof payload.password === 'string' ? payload.password : ''
-  if (!omitEmptyPassword || password.trim() !== '') {
+  const password = typeof payload.password === 'string' ? payload.password.trim() : ''
+  if (!omitEmptyPassword || password !== '') {
     normalized.password = password
   }
 

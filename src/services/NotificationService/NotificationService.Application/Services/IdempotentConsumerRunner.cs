@@ -17,6 +17,15 @@ public class IdempotentConsumerRunner
 
     public async Task RunAsync(IIntegrationEvent message, Func<Task> handler, CancellationToken cancellationToken = default)
     {
+        using var logScope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["CorrelationId"] = message.CorrelationId,
+            ["EventId"] = message.EventId,
+            ["EventType"] = message.EventType,
+            ["EventVersion"] = message.EventVersion,
+            ["Producer"] = message.Producer
+        });
+
         if (await _store.HasProcessedAsync(message.EventId, cancellationToken))
         {
             _logger.LogInformation(
@@ -28,5 +37,6 @@ public class IdempotentConsumerRunner
 
         await handler();
         await _store.MarkProcessedAsync(message.EventId, message.EventType, cancellationToken);
+        _logger.LogInformation("Processed event EventId={EventId} EventType={EventType}", message.EventId, message.EventType);
     }
 }

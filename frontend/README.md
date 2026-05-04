@@ -5,14 +5,14 @@ React + Vite frontend for the PFE.NET microservices backend.
 ## Prerequisites
 
 - Node.js 18+ (recommended: latest LTS)
-- Backend running via API Gateway: `http://localhost:5000`
+- Backend running via API Gateway: `http://localhost:5005`
 
 ## Configure
 
-Create `frontend/.env` (optional):
+Create `front/.env.local` from `front/.env.example`: 
 
 ```
-VITE_API_BASE_URL=http://localhost:5000
+VITE_API_BASE_URL=http://localhost:5005
 ```
 
 ## Run
@@ -20,8 +20,8 @@ VITE_API_BASE_URL=http://localhost:5000
 From repo root:
 
 ```
-npm install --prefix frontend
-npm run --prefix frontend dev
+npm install --prefix front
+npm run --prefix front dev
 ```
 
 Vite dev server (default): `http://localhost:5173`
