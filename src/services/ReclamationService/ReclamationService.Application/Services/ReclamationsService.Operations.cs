@@ -161,4 +161,61 @@ public partial class ReclamationsService
         return ToPriorityDto(updated);
     }
 
+    public async Task<ReclamationPriorityDto> ApplyAiPrioritySuggestionAsync(long id, AiPriorityAnalysisDto analysis, string? reason, CurrentUser actor)
+    {
+        var reclamation = GetByIdVisible(id, actor);
+        EnsurePriorityManagement(actor, reclamation);
+
+        if (analysis.ReclamationId != id)
+        {
+            throw new BadRequestException("AI analysis does not belong to this reclamation.");
+        }
+
+        var before = CaptureOperationalState(reclamation);
+        var previousPriority = ToDisplayPriority(reclamation.Priority);
+        var suggestedPriority = ParsePriority(analysis.SuggestedPriority);
+        var suggestedDisplay = ToDisplayPriority(suggestedPriority);
+        var finalReason = string.IsNullOrWhiteSpace(reason)
+            ? $"AI priority suggestion applied: {previousPriority} -> {suggestedDisplay}. Reason: {analysis.Reason}"
+            : reason.Trim();
+
+        reclamation.ManualPriorityOverride = true;
+        reclamation.ManualPriorityOverrideReason = finalReason;
+        reclamation.Priority = suggestedPriority;
+        reclamation.PrioritySource = PrioritySource.ManualOverride;
+        reclamation.PriorityUpdatedAt = DateTime.UtcNow;
+        ApplyDerivedState(reclamation);
+
+        var updated = _reclamationRepository.Update(reclamation);
+        _historyRepository.Add(new ReclamationHistory
+        {
+            ReclamationId = updated.Id,
+            FromStatus = updated.Status,
+            ToStatus = updated.Status,
+            ActorUserId = actor.UserId,
+            ActorRole = NormalizeRole(actor.Role),
+            Comment = finalReason,
+            OccurredAt = DateTime.UtcNow
+        });
+
+        await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, NormalizeRole(actor.Role));
+        return ToPriorityDto(updated);
+    }
+
+    private static NamePriority ParsePriority(string? value)
+    {
+        var normalized = string.IsNullOrWhiteSpace(value) ? "MEDUIM" : value.Trim().ToUpperInvariant();
+        if (normalized == "MEDIUM") normalized = "MEDUIM";
+        return Enum.TryParse<NamePriority>(normalized, ignoreCase: true, out var priority)
+            ? priority
+            : NamePriority.MEDUIM;
+    }
+
+    private static string ToDisplayPriority(NamePriority priority)
+    {
+        return priority == NamePriority.MEDUIM
+            ? "Medium"
+            : priority.ToString()[0] + priority.ToString()[1..].ToLowerInvariant();
+    }
+
 }

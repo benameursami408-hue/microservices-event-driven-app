@@ -100,6 +100,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("sav_access_token", out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -115,6 +128,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSavProFrontend", policy => policy
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
 
 var uploadRateLimitPermit = builder.Configuration.GetValue<int?>("Security:UploadRateLimit:PermitLimit") ?? 20;
 var uploadRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("Security:UploadRateLimit:WindowSeconds") ?? 60;
@@ -149,12 +171,15 @@ if (!builder.Environment.IsDevelopment()
 
 builder.Services.AddScoped<IReclamationRepository, ReclamationRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IAiPriorityAnalysisRepository, AiPriorityAnalysisRepository>();
 builder.Services.AddScoped<IReclamationHistoryRepository, ReclamationHistoryRepository>();
 builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
 builder.Services.AddScoped<TicketClassificationService>();
 builder.Services.AddScoped<ReclamationPriorityService>();
 builder.Services.AddScoped<ReclamationSlaService>();
 builder.Services.AddScoped<ReclamationsService>();
+builder.Services.AddScoped<ClientsService>();
+builder.Services.AddScoped<AiPriorityService>();
 builder.Services.AddScoped<AdminReclamationStatsService>();
 builder.Services.AddScoped<InterventionProjectionService>();
 builder.Services.AddHostedService<OutboxDispatcher>();
@@ -177,6 +202,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRateLimiter();
+app.UseCors("AllowSavProFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -352,6 +378,26 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
         IF COL_LENGTH('dbo.Reclamations', 'PlanningDeadline') IS NULL
             ALTER TABLE [dbo].[Reclamations] ADD [PlanningDeadline] datetime2 NULL;
 
+
+        IF OBJECT_ID(N'[dbo].[AiPriorityAnalyses]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [dbo].[AiPriorityAnalyses](
+                [Id] bigint IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                [ReclamationId] bigint NOT NULL,
+                [SuggestedPriority] nvarchar(50) NOT NULL,
+                [ConfidenceScore] int NOT NULL,
+                [SlaRisk] nvarchar(50) NOT NULL,
+                [Reason] nvarchar(1000) NOT NULL,
+                [RecommendedAction] nvarchar(1000) NOT NULL,
+                [DetectedKeywordsJson] nvarchar(max) NOT NULL,
+                [CreatedAt] datetime2 NOT NULL,
+                [AcceptedAt] datetime2 NULL,
+                [AcceptedByUserId] bigint NULL
+            );
+            CREATE INDEX [IX_AiPriorityAnalyses_ReclamationId_CreatedAt]
+                ON [dbo].[AiPriorityAnalyses]([ReclamationId], [CreatedAt]);
+        END
+
         IF COL_LENGTH('dbo.Reclamations', 'ResolutionDeadline') IS NULL
             ALTER TABLE [dbo].[Reclamations] ADD [ResolutionDeadline] datetime2 NULL;
 
@@ -366,7 +412,7 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
     {
         using var seedScope = app.Services.CreateScope();
         var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await TestDataSeeder.SeedAsync(seedDbContext, logger);
+        await TestDataSeeder.SeedAsync(seedDbContext, logger, app.Configuration);
     }
 }
 

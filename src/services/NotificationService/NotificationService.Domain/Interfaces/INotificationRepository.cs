@@ -9,4 +9,5 @@ public interface INotificationRepository
     Task<List<Notification>> GetLatestForUserAsync(long userId, int take, CancellationToken cancellationToken = default);
     Task<bool> MarkAsReadAsync(long notificationId, long userId, bool isAdmin, CancellationToken cancellationToken = default);
     Task<int> MarkAllAsReadAsync(long userId, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(long notificationId, long userId, bool isAdmin, CancellationToken cancellationToken = default);
 }

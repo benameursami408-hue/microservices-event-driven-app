@@ -146,6 +146,19 @@ builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("sav_access_token", out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -161,6 +174,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSavProFrontend", policy => policy
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
 
 var authRateLimitPermit = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:PermitLimit") ?? 10;
 var authRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:WindowSeconds") ?? 60;
@@ -212,6 +234,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseRateLimiter();
+app.UseCors("AllowSavProFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

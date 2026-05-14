@@ -1,0 +1,181 @@
+:root {
+  --primary: #1167ff;
+  --primary-dark: #0756d8;
+  --primary-light: #eaf2ff;
+  --teal: #11b7a5;
+  --text: #07173a;
+  --muted: #65738e;
+  --border: #dfe7f2;
+  --bg: #f6f9fd;
+  --card: #ffffff;
+  --success: #18b983;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --purple: #8b5cf6;
+  --orange-soft: #fff2e6;
+  --green-soft: #eafaf3;
+  --blue-soft: #eaf2ff;
+  --purple-soft: #f2eaff;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-strong: 0 16px 42px rgba(15, 23, 42, 0.1);
+  --radius: 16px;
+}
+
+:root[data-theme="dark"] {
+  --primary: #4f8dff;
+  --primary-dark: #3477f5;
+  --primary-light: #14294a;
+  --teal: #3dd6c7;
+  --text: #ecf3ff;
+  --muted: #9fb0c8;
+  --border: #263955;
+  --bg: #0d1526;
+  --card: #121d31;
+  --blue-soft: #13294b;
+  --green-soft: #12352c;
+  --purple-soft: #241d3d;
+  --orange-soft: #372513;
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  --shadow-strong: 0 16px 42px rgba(0, 0, 0, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text);
+}
+
+svg {
+  flex: 0 0 auto;
+}
+
+input,
+select,
+textarea {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .admin-main,
+:root[data-theme="dark"] .admin-shell {
+  background: var(--bg);
+}
+
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .modal-card,
+:root[data-theme="dark"] .topbar-user-menu,
+:root[data-theme="dark"] .data-table th,
+:root[data-theme="dark"] .btn,
+:root[data-theme="dark"] .icon-btn,
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  color: var(--text);
+  background-color: var(--card);
+}
+
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .icon-btn.primary,
+:root[data-theme="dark"] .admin-settings-btn.active-tool,
+:root[data-theme="dark"] .theme-choice button.active,
+:root[data-theme="dark"] .range-switch button.active {
+  background: var(--primary);
+}
+
+:root[data-theme="dark"] .data-table td,
+:root[data-theme="dark"] .drawer-section,
+:root[data-theme="dark"] .detail-section,
+:root[data-theme="dark"] .status-button-group {
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .logo-copy strong,
+:root[data-theme="dark"] .logo-copy small,
+:root[data-theme="dark"] .admin-nav-links button,
+:root[data-theme="dark"] .topbar-user,
+:root[data-theme="dark"] .settings-field,
+:root[data-theme="dark"] .settings-toggle-row strong,
+:root[data-theme="dark"] .settings-info-item strong,
+:root[data-theme="dark"] .settings-profile strong,
+:root[data-theme="dark"] .card h3,
+:root[data-theme="dark"] .card-header h3 {
+  color: var(--text);
+}
+
+:root[data-theme="dark"] .settings-info-item,
+:root[data-theme="dark"] .settings-profile,
+:root[data-theme="dark"] .client-contact-item,
+:root[data-theme="dark"] .client-snapshot-grid .info-pair,
+:root[data-theme="dark"] .donut-legend-item,
+:root[data-theme="dark"] .line-chart,
+:root[data-theme="dark"] .range-switch,
+:root[data-theme="dark"] .theme-choice button:not(.active) {
+  color: var(--text);
+  background: #162238;
+  border-color: var(--border);
+}
+
+:root[data-theme="dark"] .settings-info-item span,
+:root[data-theme="dark"] .settings-profile span,
+:root[data-theme="dark"] .settings-toggle-row p,
+:root[data-theme="dark"] .settings-card-copy {
+  color: var(--muted);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #eef4fb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5d2e4;
+  border-radius: 999px;
+}

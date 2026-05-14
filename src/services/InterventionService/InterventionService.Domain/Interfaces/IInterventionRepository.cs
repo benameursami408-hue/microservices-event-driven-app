@@ -13,5 +13,7 @@ public interface IInterventionRepository
     Task AddPartUsedAsync(PartUsed entity, CancellationToken cancellationToken = default);
     Task AddEvidenceAsync(InterventionEvidence entity, CancellationToken cancellationToken = default);
     Task AddVisitReportAsync(VisitReport entity, CancellationToken cancellationToken = default);
+    Task<VisitReport?> GetVisitReportAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<List<VisitReport>> QueryVisitReportsAsync(long? clientId = null, long? technicianId = null, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

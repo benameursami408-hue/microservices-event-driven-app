@@ -13,10 +13,12 @@ namespace ReclamationService.API.Controllers;
 public class ReclamationsController : ControllerBase
 {
     private readonly ReclamationsService _reclamationService;
+    private readonly AiPriorityService _aiPriorityService;
 
-    public ReclamationsController(ReclamationsService reclamationService)
+    public ReclamationsController(ReclamationsService reclamationService, AiPriorityService aiPriorityService)
     {
         _reclamationService = reclamationService;
+        _aiPriorityService = aiPriorityService;
     }
 
     [HttpGet]
@@ -114,6 +116,28 @@ public class ReclamationsController : ControllerBase
     {
         var actor = User.ToCurrentUser(HttpContext);
         return Ok(await _reclamationService.GetSlaAsync(id, actor));
+    }
+
+
+    [HttpGet("{id}/ai-priority-analysis/latest")]
+    public async Task<ActionResult<AiPriorityAnalysisDto?>> GetLatestAiPriorityAnalysis(long id, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        _ = _reclamationService.GetById(id, actor);
+        var analysis = await _aiPriorityService.GetLatestAsync(id, cancellationToken);
+        return analysis is null ? NoContent() : Ok(analysis);
+    }
+
+    [HttpPost("{id}/ai-priority-analysis/{analysisId:long}/apply")]
+    public async Task<ActionResult<object>> ApplyAiPriorityAnalysis(long id, long analysisId, [FromBody] ApplyAiPriorityDto dto, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        var analysis = await _aiPriorityService.GetByIdAsync(analysisId, cancellationToken);
+        if (analysis is null || analysis.ReclamationId != id) return NotFound();
+
+        var updatedPriority = await _reclamationService.ApplyAiPrioritySuggestionAsync(id, analysis, dto.Reason, actor);
+        var accepted = await _aiPriorityService.MarkAcceptedAsync(id, analysisId, actor.UserId, cancellationToken);
+        return Ok(new { priority = updatedPriority, analysis = accepted });
     }
 
     [HttpPost("{id}/recalculate-priority")]

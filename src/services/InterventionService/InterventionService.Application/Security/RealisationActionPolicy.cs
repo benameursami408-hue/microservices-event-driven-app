@@ -19,7 +19,7 @@ public static class RealisationActionPolicy
     {
         var role = NormalizeRole(actor.Role);
         var isAdmin = role == "ADMIN";
-        var isTechOwner = role == "ST" && intervention.TechnicianId == actor.UserId;
+        var isTechOwner = IsTechnicianRole(role) && intervention.TechnicianId == actor.UserId;
         var isSav = role == "SAV";
         var canOperate = isAdmin || isTechOwner;
         var actions = new List<string>();
@@ -59,5 +59,7 @@ public static class RealisationActionPolicy
         return actions;
     }
 
-    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().ToUpperInvariant();
+    private static bool IsTechnicianRole(string role) => role is "ST" or "TECHNICIAN";
+
+    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToUpperInvariant();
 }

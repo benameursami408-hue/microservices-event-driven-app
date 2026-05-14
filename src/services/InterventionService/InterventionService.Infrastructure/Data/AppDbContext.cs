@@ -50,6 +50,12 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.AppointmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<Intervention>()
+            .HasOne(x => x.Appointment)
+            .WithMany()
+            .HasForeignKey(x => x.AppointmentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         modelBuilder.Entity<PlanningRequest>().HasIndex(x => x.ReclamationId);
         modelBuilder.Entity<Appointment>().HasIndex(x => new { x.ReclamationId, x.Status, x.Sequence });
         modelBuilder.Entity<Intervention>().HasIndex(x => new { x.AppointmentId, x.ReclamationId });

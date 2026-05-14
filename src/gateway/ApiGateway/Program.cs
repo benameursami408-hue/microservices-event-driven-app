@@ -27,6 +27,7 @@ builder.Services.AddCors(options =>
 
         policy.WithHeaders("Authorization", "Content-Type", "Accept", "Origin", "X-Correlation-ID");
         policy.WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
+        policy.AllowCredentials();
     });
 });
 

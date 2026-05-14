@@ -85,4 +85,22 @@ public class NotificationRepository : INotificationRepository
         await _context.SaveChangesAsync(cancellationToken);
         return items.Count;
     }
+    public async Task<bool> DeleteAsync(long notificationId, long userId, bool isAdmin, CancellationToken cancellationToken = default)
+    {
+        var item = await _context.Notifications.FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
+        if (item is null)
+        {
+            return false;
+        }
+
+        if (!isAdmin && item.UserId != userId)
+        {
+            return false;
+        }
+
+        _context.Notifications.Remove(item);
+        await _context.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
 }

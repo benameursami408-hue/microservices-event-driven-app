@@ -11,8 +11,12 @@ public class Intervention
     [Required]
     public Guid AppointmentId { get; set; }
 
+    public Appointment? Appointment { get; set; }
+
     [Required]
     public long ReclamationId { get; set; }
+
+    public long ClientId { get; set; }
 
     [Required]
     [MaxLength(50)]

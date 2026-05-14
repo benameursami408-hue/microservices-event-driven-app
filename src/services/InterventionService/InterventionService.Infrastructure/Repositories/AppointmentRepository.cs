@@ -25,12 +25,14 @@ public class AppointmentRepository : IAppointmentRepository
     public Task<List<Appointment>> QueryAsync(
         long? reclamationId = null,
         long? technicianId = null,
+        long? clientId = null,
         DateTime? from = null,
         DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Appointments
             .AsNoTracking()
+            .Include(x => x.PlanningRequest)
             .AsQueryable();
 
         if (reclamationId.HasValue)
@@ -41,6 +43,11 @@ public class AppointmentRepository : IAppointmentRepository
         if (technicianId.HasValue)
         {
             query = query.Where(x => x.TechnicianId == technicianId.Value);
+        }
+
+        if (clientId.HasValue)
+        {
+            query = query.Where(x => x.PlanningRequest != null && x.PlanningRequest.ClientId == clientId.Value);
         }
 
         if (from.HasValue)

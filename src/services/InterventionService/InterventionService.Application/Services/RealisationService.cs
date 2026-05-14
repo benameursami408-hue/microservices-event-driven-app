@@ -21,7 +21,7 @@ public partial class RealisationService
 
     public async Task<List<InterventionDto>> QueryInterventionsAsync(CurrentUser actor, long? reclamationId = null, long? technicianId = null, CancellationToken cancellationToken = default)
     {
-        if (NormalizeRole(actor.Role) == "ST" && !technicianId.HasValue)
+        if (IsTechnicianRole(actor.Role))
         {
             technicianId = actor.UserId;
         }
@@ -30,10 +30,33 @@ public partial class RealisationService
         return items.Select(x => ToDto(x, actor)).ToList();
     }
 
+    public Task<List<InterventionDto>> QueryMyInterventionsAsync(CurrentUser actor, CancellationToken cancellationToken = default)
+    {
+        return QueryInterventionsAsync(actor, technicianId: actor.UserId, cancellationToken: cancellationToken);
+    }
+
     public async Task<InterventionDto?> GetInterventionAsync(Guid id, CurrentUser actor, CancellationToken cancellationToken = default)
     {
         var item = await _interventionRepository.GetByIdAsync(id, cancellationToken);
-        return item is null ? null : ToDto(item, actor);
+        if (item is null) return null;
+
+        if (IsTechnicianRole(actor.Role) && item.TechnicianId != actor.UserId)
+        {
+            return null;
+        }
+
+        return ToDto(item, actor);
+    }
+
+    public async Task<InterventionDto> UpdateStatusAsync(Guid id, UpdateInterventionStatusDto dto, CurrentUser actor, CancellationToken cancellationToken = default)
+    {
+        var intervention = await GetOwnedAsync(id, actor, cancellationToken);
+        intervention.Status = dto.Status;
+        if (dto.Status == InterventionStatus.Started) intervention.StartedAt ??= DateTime.UtcNow;
+        if (dto.Status == InterventionStatus.Completed) intervention.EndedAt ??= DateTime.UtcNow;
+        intervention.UpdatedAt = DateTime.UtcNow;
+        await _interventionRepository.SaveChangesAsync(cancellationToken);
+        return ToDto(intervention, actor);
     }
 
 }

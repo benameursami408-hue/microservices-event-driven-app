@@ -12,6 +12,7 @@ namespace ReclamationService.Infrastructure.Data
 
         public DbSet<Reclamation> Reclamations { get; set; } = null!;
         public DbSet<Client> Clients { get; set; } = null!;
+        public DbSet<AiPriorityAnalysis> AiPriorityAnalyses { get; set; } = null!;
         public DbSet<ReclamationHistory> ReclamationHistories { get; set; } = null!;
         public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
     }

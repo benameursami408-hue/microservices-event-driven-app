@@ -25,6 +25,7 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<ReclamationAssignedConsumer>();
     x.AddConsumer<ReclamationPlannedConsumer>();
     x.AddConsumer<ReclamationStatusChangedConsumer>();
+    x.AddConsumer<ReclamationPriorityUpdatedConsumer>();
     x.AddConsumer<TechnicianAssignedConsumer>();
     x.AddConsumer<AppointmentConfirmedConsumer>();
     x.AddConsumer<AppointmentRescheduledConsumer>();
@@ -106,6 +107,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("sav_access_token", out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -121,6 +135,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSavProFrontend", policy => policy
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
 
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationSender, LoggingNotificationSender>();
@@ -150,6 +173,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowSavProFrontend");
 app.UseAuthentication();
 
 app.UseAuthorization();
@@ -223,7 +247,7 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
     {
         using var seedScope = app.Services.CreateScope();
         var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await TestDataSeeder.SeedAsync(seedDbContext, logger);
+        await TestDataSeeder.SeedAsync(seedDbContext, logger, app.Configuration);
     }
 
     using var schemaScope = app.Services.CreateScope();

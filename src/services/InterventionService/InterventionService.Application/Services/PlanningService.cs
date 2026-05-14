@@ -30,9 +30,10 @@ public partial class PlanningService
         _capacityService = capacityService;
     }
 
-    public async Task<List<PlanningRequestDto>> GetRequestsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<PlanningRequestDto>> GetRequestsAsync(CurrentUser actor, CancellationToken cancellationToken = default)
     {
-        var items = await _planningRequestRepository.GetAllAsync(cancellationToken);
+        long? clientId = NormalizeRole(actor.Role) == "CLIENT" ? actor.UserId : null;
+        var items = await _planningRequestRepository.GetAllAsync(clientId, cancellationToken);
         return items.Select(ToDto).ToList();
     }
 
@@ -50,12 +51,19 @@ public partial class PlanningService
         DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
-        if (NormalizeRole(actor.Role) == "ST" && !technicianId.HasValue)
+        long? clientId = null;
+        var normalizedRole = NormalizeRole(actor.Role);
+        if (IsTechnicianRole(actor.Role))
         {
             technicianId = actor.UserId;
         }
 
-        var items = await _appointmentRepository.QueryAsync(reclamationId, technicianId, from, to, cancellationToken);
+        if (normalizedRole == "CLIENT")
+        {
+            clientId = actor.UserId;
+        }
+
+        var items = await _appointmentRepository.QueryAsync(reclamationId, technicianId, clientId, from, to, cancellationToken);
         return items.Select(x => ToDto(x, actor)).ToList();
     }
 
@@ -67,7 +75,9 @@ public partial class PlanningService
 
     public async Task<AppointmentDto?> GetByReclamationAsync(long reclamationId, CurrentUser actor, CancellationToken cancellationToken = default)
     {
-        var items = await _appointmentRepository.QueryAsync(reclamationId: reclamationId, cancellationToken: cancellationToken);
+        long? clientId = NormalizeRole(actor.Role) == "CLIENT" ? actor.UserId : null;
+        long? technicianId = IsTechnicianRole(actor.Role) ? actor.UserId : null;
+        var items = await _appointmentRepository.QueryAsync(reclamationId: reclamationId, technicianId: technicianId, clientId: clientId, cancellationToken: cancellationToken);
         var latest = items.OrderByDescending(x => x.Sequence).ThenByDescending(x => x.StartAt).FirstOrDefault();
         return latest is null ? null : ToDto(latest, actor);
     }

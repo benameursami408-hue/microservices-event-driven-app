@@ -17,6 +17,8 @@ public class InterventionRepository : IInterventionRepository
     public Task<Intervention?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return _dbContext.Interventions
+            .Include(x => x.Appointment)
+                .ThenInclude(x => x!.PlanningRequest)
             .Include(x => x.Diagnostics.OrderByDescending(d => d.CreatedAt))
             .Include(x => x.RepairActions)
             .Include(x => x.PartsUsed)
@@ -28,6 +30,8 @@ public class InterventionRepository : IInterventionRepository
     public Task<Intervention?> GetByAppointmentIdAsync(Guid appointmentId, CancellationToken cancellationToken = default)
     {
         return _dbContext.Interventions
+            .Include(x => x.Appointment)
+                .ThenInclude(x => x!.PlanningRequest)
             .Include(x => x.Diagnostics.OrderByDescending(d => d.CreatedAt))
             .Include(x => x.RepairActions)
             .Include(x => x.PartsUsed)
@@ -40,6 +44,8 @@ public class InterventionRepository : IInterventionRepository
     {
         var query = _dbContext.Interventions
             .AsNoTracking()
+            .Include(x => x.Appointment)
+                .ThenInclude(x => x!.PlanningRequest)
             .Include(x => x.VisitReports.OrderByDescending(r => r.CreatedAt))
             .AsQueryable();
 
@@ -84,6 +90,23 @@ public class InterventionRepository : IInterventionRepository
     public async Task AddVisitReportAsync(VisitReport entity, CancellationToken cancellationToken = default)
     {
         await _dbContext.VisitReports.AddAsync(entity, cancellationToken);
+    }
+
+    public Task<VisitReport?> GetVisitReportAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.VisitReports.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public Task<List<VisitReport>> QueryVisitReportsAsync(long? clientId = null, long? technicianId = null, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.VisitReports.AsNoTracking()
+            .Join(_dbContext.Interventions.AsNoTracking(), report => report.InterventionId, intervention => intervention.Id, (report, intervention) => new { report, intervention })
+            .AsQueryable();
+
+        if (clientId.HasValue) query = query.Where(x => x.intervention.ClientId == clientId.Value);
+        if (technicianId.HasValue) query = query.Where(x => x.intervention.TechnicianId == technicianId.Value);
+
+        return query.OrderByDescending(x => x.report.CreatedAt).Select(x => x.report).ToListAsync(cancellationToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)

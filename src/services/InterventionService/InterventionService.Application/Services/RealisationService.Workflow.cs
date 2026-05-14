@@ -169,8 +169,8 @@ public partial class RealisationService
         var intervention = await _interventionRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("Intervention not found.");
 
-        EnsureRole(actor, "SAV", "ADMIN", "ST");
-        if (NormalizeRole(actor.Role) == "ST" && intervention.TechnicianId != actor.UserId)
+        EnsureRole(actor, "SAV", "ADMIN", "ST", "TECHNICIAN");
+        if (IsTechnicianRole(actor.Role) && intervention.TechnicianId != actor.UserId)
         {
             throw new UnauthorizedAccessException();
         }

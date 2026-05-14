@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using InterventionService.Api.Infrastructure;
 using InterventionService.Application.Consumers;
 using InterventionService.Application.Interfaces;
@@ -55,7 +56,8 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -103,6 +105,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (string.IsNullOrWhiteSpace(context.Token)
+                    && context.Request.Cookies.TryGetValue("sav_access_token", out var cookieToken))
+                {
+                    context.Token = cookieToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -118,6 +133,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSavProFrontend", policy => policy
+        .WithOrigins("http://localhost:5173")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
+
 builder.Services.AddScoped<IPlanningRequestRepository, PlanningRequestRepository>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IInterventionRepository, InterventionRepository>();
@@ -127,6 +151,7 @@ builder.Services.AddScoped<IdempotentConsumerRunner>();
 builder.Services.AddScoped<PlanningCapacityService>();
 builder.Services.AddScoped<PlanningService>();
 builder.Services.AddScoped<RealisationService>();
+builder.Services.AddScoped<VisitReportsService>();
 builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();
@@ -143,6 +168,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("AllowSavProFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health");
@@ -211,6 +237,11 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
     using var schemaScope = app.Services.CreateScope();
     var schemaDbContext = schemaScope.ServiceProvider.GetRequiredService<AppDbContext>();
     await schemaDbContext.Database.ExecuteSqlRawAsync(SqlBootstrap.Script);
+
+    if (app.Configuration.GetValue<bool>("Seed:Enabled"))
+    {
+        await TestDataSeeder.SeedAsync(schemaDbContext, logger, app.Configuration);
+    }
 }
 
 app.Run();
@@ -309,6 +340,7 @@ internal static class SqlBootstrap
                 [Id] uniqueidentifier NOT NULL PRIMARY KEY,
                 [AppointmentId] uniqueidentifier NOT NULL,
                 [ReclamationId] bigint NOT NULL,
+                [ClientId] bigint NOT NULL,
                 [Reference] nvarchar(50) NOT NULL,
                 [TechnicianId] bigint NOT NULL,
                 [TechnicianName] nvarchar(100) NOT NULL,
@@ -374,6 +406,9 @@ internal static class SqlBootstrap
                 [CapturedByRole] nvarchar(30) NOT NULL
             );
         END
+
+        IF COL_LENGTH('realisation.Interventions', 'ClientId') IS NULL
+            ALTER TABLE [realisation].[Interventions] ADD [ClientId] bigint NOT NULL CONSTRAINT [DF_Interventions_ClientId] DEFAULT(0);
 
         IF OBJECT_ID(N'[realisation].[VisitReports]', N'U') IS NULL
         BEGIN

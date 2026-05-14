@@ -55,14 +55,27 @@ public partial class PlanningService
 
     private static void EnsureRole(CurrentUser actor, params string[] roles)
     {
-        var current = NormalizeRole(actor.Role);
-        if (!roles.Any(x => NormalizeRole(x) == current))
+        if (!roles.Any(role => RoleMatches(actor.Role, role)))
         {
             throw new UnauthorizedAccessException();
         }
     }
 
-    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().ToUpperInvariant();
+    private static bool RoleMatches(string currentRole, string expectedRole)
+    {
+        var current = NormalizeRole(currentRole);
+        var expected = NormalizeRole(expectedRole);
+        if (expected == "ST" || expected == "TECHNICIAN")
+        {
+            return current is "ST" or "TECHNICIAN";
+        }
+
+        return current == expected;
+    }
+
+    private static bool IsTechnicianRole(string role) => NormalizeRole(role) is "ST" or "TECHNICIAN";
+
+    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToUpperInvariant();
 
     private static DateTime ResolveEndAt(DateTime startAt, DateTime? endAt, int estimatedDurationMinutes)
     {
@@ -83,7 +96,7 @@ public partial class PlanningService
             return;
         }
 
-        if (role == "ST" && actor.UserId == technicianId)
+        if (IsTechnicianRole(actor.Role) && actor.UserId == technicianId)
         {
             return;
         }

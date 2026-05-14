@@ -19,10 +19,11 @@ public class PlanningController : ControllerBase
     }
 
     [HttpGet("requests")]
-    [Authorize(Roles = "SAV,ADMIN")]
+    [Authorize(Roles = "SAV,ADMIN,CLIENT")]
     public async Task<ActionResult<List<PlanningRequestDto>>> GetRequests(CancellationToken cancellationToken)
     {
-        return Ok(await _planningService.GetRequestsAsync(cancellationToken));
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _planningService.GetRequestsAsync(actor, cancellationToken));
     }
 
     [HttpGet("requests/{id:guid}")]
@@ -62,7 +63,7 @@ public class PlanningController : ControllerBase
     }
 
     [HttpGet("technicians/{technicianId:long}/capacity")]
-    [Authorize(Roles = "SAV,ADMIN,ST")]
+    [Authorize(Roles = "SAV,ADMIN,ST,TECHNICIAN")]
     public async Task<ActionResult<TechnicianCapacityDto>> GetCapacity(long technicianId, [FromQuery] DateTime? date, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -70,7 +71,7 @@ public class PlanningController : ControllerBase
     }
 
     [HttpGet("technicians/{technicianId:long}/agenda")]
-    [Authorize(Roles = "SAV,ADMIN,ST")]
+    [Authorize(Roles = "SAV,ADMIN,ST,TECHNICIAN")]
     public async Task<ActionResult<List<AppointmentDto>>> GetAgenda(
         long technicianId,
         [FromQuery] DateTime? from,
@@ -106,7 +107,7 @@ public class PlanningController : ControllerBase
     }
 
     [HttpPost("appointments/{id:guid}/reschedule")]
-    [Authorize(Roles = "SAV,ADMIN,ST")]
+    [Authorize(Roles = "SAV,ADMIN,ST,TECHNICIAN")]
     public async Task<ActionResult<AppointmentDto>> Reschedule(Guid id, [FromBody] RescheduleAppointmentDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);

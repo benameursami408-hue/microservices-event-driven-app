@@ -22,6 +22,60 @@ namespace ReclamationService.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ReclamationService.Domain.Entities.AiPriorityAnalysis", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("AcceptedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("AcceptedByUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ConfidenceScore")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DetectedKeywordsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long>("ReclamationId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RecommendedAction")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SlaRisk")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SuggestedPriority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReclamationId");
+
+                    b.ToTable("AiPriorityAnalyses");
+                });
+
             modelBuilder.Entity("ReclamationService.Domain.Entities.Client", b =>
                 {
                     b.Property<long>("Id")
@@ -339,6 +393,17 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("OutboxMessages");
+                });
+
+            modelBuilder.Entity("ReclamationService.Domain.Entities.AiPriorityAnalysis", b =>
+                {
+                    b.HasOne("ReclamationService.Domain.Entities.Reclamation", "Reclamation")
+                        .WithMany()
+                        .HasForeignKey("ReclamationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reclamation");
                 });
 
             modelBuilder.Entity("ReclamationService.Domain.Entities.ReclamationHistory", b =>

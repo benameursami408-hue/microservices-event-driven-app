@@ -2,7 +2,14 @@
   "Routes": [
     {
       "UpstreamPathTemplate": "/api/auth/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/auth/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -14,7 +21,14 @@
     },
     {
       "UpstreamPathTemplate": "/api/admin/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/admin/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -26,7 +40,14 @@
     },
     {
       "UpstreamPathTemplate": "/api/reclamations",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/reclamations",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -38,7 +59,14 @@
     },
     {
       "UpstreamPathTemplate": "/api/reclamations/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/reclamations/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -50,7 +78,10 @@
     },
     {
       "UpstreamPathTemplate": "/uploads/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/uploads/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -62,7 +93,14 @@
     },
     {
       "UpstreamPathTemplate": "/api/notifications",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/notifications",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -74,7 +112,14 @@
     },
     {
       "UpstreamPathTemplate": "/api/notifications/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/notifications/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -85,8 +130,53 @@
       ]
     },
     {
+      "UpstreamPathTemplate": "/api/interventions",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/interventions",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "intervention-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/interventions/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/interventions/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "intervention-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
       "UpstreamPathTemplate": "/api/planning/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/planning/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
@@ -98,12 +188,133 @@
     },
     {
       "UpstreamPathTemplate": "/api/realisations/{catchAll}",
-      "UpstreamHttpMethod": [ "Get", "Post", "Put", "Delete", "Patch", "Options" ],
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
       "DownstreamPathTemplate": "/api/realisations/{catchAll}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "intervention-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/clients",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/clients",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "reclamation-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/clients/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/clients/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "reclamation-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/dashboard/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/dashboard/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "reclamation-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/visit-reports",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/visit-reports",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "intervention-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/visit-reports/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/visit-reports/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "intervention-service",
+          "Port": 8080
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/ai/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Post",
+        "Put",
+        "Delete",
+        "Patch",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/ai/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "reclamation-service",
           "Port": 8080
         }
       ]

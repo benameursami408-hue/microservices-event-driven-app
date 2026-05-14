@@ -207,6 +207,42 @@ public class NotificationWorkflow
         }
     }
 
+    public async Task HandleReclamationPriorityUpdatedAsync(ReclamationPriorityUpdatedEvent message, CancellationToken cancellationToken = default)
+    {
+        var priority = (message.Priority ?? string.Empty).Trim().ToUpperInvariant();
+        if (priority != "HIGH" && priority != "URGENT")
+        {
+            return;
+        }
+
+        var savNotification = new Notification
+        {
+            Type = "AI_PRIORITY_ESCALATION",
+            Title = "Priority escalation",
+            Message = $"Reclamation '{message.Reference}' priority is now {priority}. SLA risk must be monitored immediately.",
+            UserId = message.ActorUserId > 0 ? message.ActorUserId : null,
+            SourceEvent = message.EventType,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await CreateSendAndPersistAsync(savNotification, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(_options.AdminEmail))
+        {
+            var adminNotification = new Notification
+            {
+                Type = "ADMIN_ALERT",
+                Title = "High priority reclamation",
+                Message = $"Reclamation '{message.Reference}' was escalated to {priority} by {message.ActorRole}#{message.ActorUserId}.",
+                RecipientEmail = _options.AdminEmail,
+                SourceEvent = message.EventType,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await CreateSendAndPersistAsync(adminNotification, cancellationToken);
+        }
+    }
+
     public async Task HandleTechnicianAssignedAsync(TechnicianAssignedEvent message, CancellationToken cancellationToken = default)
     {
         var technicianNotification = new Notification

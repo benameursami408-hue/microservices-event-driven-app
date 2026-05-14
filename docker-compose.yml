@@ -73,8 +73,10 @@ services:
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
-      - Seed__AdminEmail=${SEED_ADMIN_EMAIL:-admin@local}
-      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:-ChangeMe_Admin_2026!}
+      - Seed__DemoData=${SEED_DEMO_DATA:-true}
+      - Seed__ResetDemoData=${RESET_DEMO_DATA:-false}
+      - Seed__AdminEmail=${SEED_ADMIN_EMAIL:-admin@savpro.local}
+      - Seed__AdminPassword=${SEED_ADMIN_PASSWORD:-Password123!}
       - Seed__AdminFirstName=${SEED_ADMIN_FIRSTNAME:-Admin}
       - Seed__AdminLastName=${SEED_ADMIN_LASTNAME:-User}
       - Seed__AdminPhoneNumber=${SEED_ADMIN_PHONE:-0000000000}
@@ -110,6 +112,8 @@ services:
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
+      - Seed__DemoData=${SEED_DEMO_DATA:-true}
+      - Seed__ResetDemoData=${RESET_DEMO_DATA:-false}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
       - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
@@ -138,11 +142,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - Database__AutoMigrate=true
       - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
-      - Notifications__AdminEmail=${NOTIFICATIONS_ADMIN_EMAIL:-admin@local}
+      - Notifications__AdminEmail=${NOTIFICATIONS_ADMIN_EMAIL:-admin@savpro.local}
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
       - Seed__Enabled=${SEED_ENABLED:-true}
+      - Seed__DemoData=${SEED_DEMO_DATA:-true}
+      - Seed__ResetDemoData=${RESET_DEMO_DATA:-false}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
       - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}
@@ -172,6 +178,9 @@ services:
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
       - Jwt__Audience=${JWT_AUDIENCE:-AuthServiceUsers}
       - Jwt__SecretKey=${JWT_SECRET:-ChangeMe_Use_A_Random_At_Least_32_Char_Jwt_Secret_2026!}
+      - Seed__Enabled=${SEED_ENABLED:-true}
+      - Seed__DemoData=${SEED_DEMO_DATA:-true}
+      - Seed__ResetDemoData=${RESET_DEMO_DATA:-false}
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=${RABBITMQ_USER:-pfe}
       - RabbitMQ__Password=${RABBITMQ_PASS:-ChangeMe_RabbitMQ_2026!}

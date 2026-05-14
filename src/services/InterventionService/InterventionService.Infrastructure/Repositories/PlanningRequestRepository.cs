@@ -33,10 +33,18 @@ public class PlanningRequestRepository : IPlanningRequestRepository
                 cancellationToken);
     }
 
-    public Task<List<PlanningRequest>> GetAllAsync(CancellationToken cancellationToken = default)
+    public Task<List<PlanningRequest>> GetAllAsync(long? clientId = null, CancellationToken cancellationToken = default)
     {
-        return _dbContext.PlanningRequests
+        var query = _dbContext.PlanningRequests
             .AsNoTracking()
+            .AsQueryable();
+
+        if (clientId.HasValue)
+        {
+            query = query.Where(x => x.ClientId == clientId.Value);
+        }
+
+        return query
             .OrderByDescending(x => x.RequestedAt)
             .ToListAsync(cancellationToken);
     }

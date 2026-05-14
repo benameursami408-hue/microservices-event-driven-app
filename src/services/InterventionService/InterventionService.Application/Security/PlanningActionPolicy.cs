@@ -14,7 +14,7 @@ public static class PlanningActionPolicy
     {
         var role = NormalizeRole(actor.Role);
         var isSavOrAdmin = role is "SAV" or "ADMIN";
-        var isTech = role == "ST";
+        var isTech = IsTechnicianRole(role);
         var actions = new List<string>();
 
         if (isSavOrAdmin && appointment.Status is AppointmentStatus.Proposed or AppointmentStatus.Rescheduled)
@@ -39,5 +39,7 @@ public static class PlanningActionPolicy
         return actions;
     }
 
-    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().ToUpperInvariant();
+    private static bool IsTechnicianRole(string role) => role is "ST" or "TECHNICIAN";
+
+    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToUpperInvariant();
 }

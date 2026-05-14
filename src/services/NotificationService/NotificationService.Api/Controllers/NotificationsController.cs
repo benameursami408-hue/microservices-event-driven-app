@@ -58,4 +58,17 @@ public class NotificationsController : ControllerBase
         var updated = await _notificationRepository.MarkAllAsReadAsync(actor.UserId, actor.IsInRole("ADMIN"), cancellationToken);
         return Ok(new { updated });
     }
+    [HttpDelete("{id:long}")]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken = default)
+    {
+        var actor = User.ToCurrentUser();
+        var success = await _notificationRepository.DeleteAsync(id, actor.UserId, actor.IsInRole("ADMIN"), cancellationToken);
+        if (!success)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
 }

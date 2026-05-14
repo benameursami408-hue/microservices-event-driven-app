@@ -41,7 +41,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpGet("interventions/mine")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<List<InterventionDto>>> GetMine(CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -49,7 +49,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/start")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> Start(Guid id, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -57,7 +57,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/pause")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> Pause(Guid id, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -65,7 +65,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/diagnostic")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> AddDiagnostic(Guid id, [FromBody] RecordDiagnosticDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -73,7 +73,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/repair-actions")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> AddRepairAction(Guid id, [FromBody] AddRepairActionDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -81,7 +81,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/parts-used")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> AddPart(Guid id, [FromBody] AddPartUsedDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -89,7 +89,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/evidences")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> AddEvidence(Guid id, [FromBody] AddEvidenceDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -97,7 +97,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/complete")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> Complete(Guid id, [FromBody] CompleteInterventionDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -105,7 +105,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/publish-report")]
-    [Authorize(Roles = "ST,SAV,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,SAV,ADMIN")]
     public async Task<ActionResult<InterventionDto>> PublishReport(Guid id, [FromBody] PublishVisitReportDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
@@ -113,7 +113,7 @@ public class RealisationsController : ControllerBase
     }
 
     [HttpPost("interventions/{id:guid}/request-replanning")]
-    [Authorize(Roles = "ST,ADMIN")]
+    [Authorize(Roles = "ST,TECHNICIAN,ADMIN")]
     public async Task<ActionResult<InterventionDto>> RequestReplanning(Guid id, [FromBody] RequestReplanningDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);

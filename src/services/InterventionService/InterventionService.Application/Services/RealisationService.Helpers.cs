@@ -14,8 +14,8 @@ public partial class RealisationService
         var intervention = await _interventionRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException("Intervention not found.");
 
-        EnsureRole(actor, "ST", "ADMIN");
-        if (NormalizeRole(actor.Role) == "ST" && intervention.TechnicianId != actor.UserId)
+        EnsureRole(actor, "ST", "TECHNICIAN", "ADMIN");
+        if (IsTechnicianRole(actor.Role) && intervention.TechnicianId != actor.UserId)
         {
             throw new UnauthorizedAccessException();
         }
@@ -28,7 +28,19 @@ public partial class RealisationService
         Id = item.Id,
         AppointmentId = item.AppointmentId,
         ReclamationId = item.ReclamationId,
+        ClientId = item.ClientId,
+        ClientName = item.Appointment?.PlanningRequest?.CustomerName ?? string.Empty,
         Reference = item.Reference,
+        Priority = item.Appointment?.PlanningRequest?.Priority,
+        ServiceAddress = item.Appointment?.PlanningRequest?.ServiceAddress,
+        ProductName = item.Appointment?.PlanningRequest?.ProductName,
+        Brand = item.Appointment?.PlanningRequest?.Brand,
+        Model = item.Appointment?.PlanningRequest?.Model,
+        SerialNumber = item.Appointment?.PlanningRequest?.SerialNumber,
+        ScheduledAt = item.Appointment?.StartAt,
+        Description = item.Appointment?.PlanningRequest?.ProductName is { Length: > 0 } productName
+            ? $"Intervention planifiee pour {productName}."
+            : "Intervention SAV assignee.",
         TechnicianId = item.TechnicianId,
         TechnicianName = item.TechnicianName,
         StartedAt = item.StartedAt,
@@ -42,12 +54,25 @@ public partial class RealisationService
 
     private static void EnsureRole(CurrentUser actor, params string[] roles)
     {
-        var current = NormalizeRole(actor.Role);
-        if (!roles.Any(x => NormalizeRole(x) == current))
+        if (!roles.Any(role => RoleMatches(actor.Role, role)))
         {
             throw new UnauthorizedAccessException();
         }
     }
 
-    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().ToUpperInvariant();
+    private static bool RoleMatches(string currentRole, string expectedRole)
+    {
+        var current = NormalizeRole(currentRole);
+        var expected = NormalizeRole(expectedRole);
+        if (expected == "ST" || expected == "TECHNICIAN")
+        {
+            return current is "ST" or "TECHNICIAN";
+        }
+
+        return current == expected;
+    }
+
+    private static bool IsTechnicianRole(string role) => NormalizeRole(role) is "ST" or "TECHNICIAN";
+
+    private static string NormalizeRole(string role) => (role ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToUpperInvariant();
 }

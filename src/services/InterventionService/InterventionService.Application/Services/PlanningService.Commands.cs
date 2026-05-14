@@ -169,6 +169,7 @@ public partial class PlanningService
             {
                 AppointmentId = appointment.Id,
                 ReclamationId = appointment.ReclamationId,
+                ClientId = planningRequest.ClientId,
                 Reference = appointment.Reference,
                 TechnicianId = appointment.TechnicianId.Value,
                 TechnicianName = appointment.TechnicianName ?? string.Empty,
@@ -204,11 +205,11 @@ public partial class PlanningService
 
     public async Task<AppointmentDto> RescheduleAppointmentAsync(Guid appointmentId, RescheduleAppointmentDto dto, CurrentUser actor, CancellationToken cancellationToken = default)
     {
-        EnsureRole(actor, "SAV", "ADMIN", "ST");
+        EnsureRole(actor, "SAV", "ADMIN", "ST", "TECHNICIAN");
         var appointment = await _appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)
             ?? throw new InvalidOperationException("Appointment not found.");
 
-        if (NormalizeRole(actor.Role) == "ST" && appointment.TechnicianId != actor.UserId)
+        if (IsTechnicianRole(actor.Role) && appointment.TechnicianId != actor.UserId)
         {
             throw new UnauthorizedAccessException();
         }
