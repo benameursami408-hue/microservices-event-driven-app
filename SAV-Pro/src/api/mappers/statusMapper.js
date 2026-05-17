@@ -11,6 +11,22 @@ const reclamationToApi = {
 };
 
 const reclamationFromApi = {
+  0: 'Open',
+  1: 'Assigned',
+  2: 'Planned',
+  3: 'In Progress',
+  4: 'Resolved',
+  5: 'Closed',
+  6: 'Cancelled',
+  7: 'Rejected',
+  '0': 'Open',
+  '1': 'Assigned',
+  '2': 'Planned',
+  '3': 'In Progress',
+  '4': 'Resolved',
+  '5': 'Closed',
+  '6': 'Cancelled',
+  '7': 'Rejected',
   Open: 'Open',
   Assigned: 'Assigned',
   Planned: 'Planned',

@@ -1,10 +1,21 @@
 import { apiRequest } from './apiClient';
 
+function normalizeNotificationType(item = {}) {
+  const text = `${item.type || ''} ${item.title || ''} ${item.message || ''}`.toLowerCase();
+  if (text.includes('sla')) return 'sla';
+  if (text.includes('planning') || text.includes('appointment') || text.includes('visit')) return 'calendar';
+  if (text.includes('assign') || text.includes('technician')) return 'assignment';
+  if (text.includes('priority')) return 'warning';
+  if (text.includes('report')) return 'report';
+  if (text.includes('created') || text.includes('resolved') || text.includes('closed')) return 'success';
+  return item.type || 'bell';
+}
+
 function mapNotificationFromApi(item = {}) {
   return {
     id: String(item.id),
     technicalId: item.id,
-    type: item.type || 'bell',
+    type: normalizeNotificationType(item),
     title: item.title || item.type || 'Notification',
     message: item.message || '',
     recipientRole: item.recipientRole || '',

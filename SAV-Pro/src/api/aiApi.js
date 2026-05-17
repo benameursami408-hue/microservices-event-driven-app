@@ -67,8 +67,8 @@ export async function applyAiPriorityAnalysis(reclamation, analysisId, payload =
     throw new ApiError('Cannot apply AI priority suggestion: missing reclamation id or analysis id.');
   }
 
-  return apiRequest(`/api/reclamations/${id}/ai-priority-analysis/${analysisId}/apply`, {
+  return apiRequest(`/api/reclamations/${id}/ai-priority/apply`, {
     method: 'POST',
-    body: payload
+    body: { ...payload, analysisId }
   });
 }

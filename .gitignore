@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-!front/.env.example
+!SAV-Pro/.env.example
 
 # .NET generated files
 **/bin/
@@ -14,12 +14,14 @@
 **/*.log
 
 # Node / Vite generated files
-front/node_modules/
-front/dist/
-front/dist-ssr/
-front/.env
-front/.env.*
-!front/.env.example
+SAV-Pro/node_modules/
+SAV-Pro/dist/
+SAV-Pro/dist-ssr/
+SAV-Pro/.vite/
+SAV-Pro/.env
+SAV-Pro/.env.local
+SAV-Pro/.env.*
+!SAV-Pro/.env.example
 
 # OS / IDE
 .DS_Store
@@ -27,8 +29,8 @@ front/.env.*
 .vscode/*
 !.vscode/extensions.json
 # Test outputs
-front/coverage/
-front/playwright-report/
-front/test-results/
+SAV-Pro/coverage/
+SAV-Pro/playwright-report/
+SAV-Pro/test-results/
 TestResults/
 **/TestResults/

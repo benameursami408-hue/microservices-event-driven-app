@@ -1,5 +1,13 @@
 // Backend enum contains MEDUIM typo; keep this mapping until backend enum is migrated.
 export const priorityToApi = {
+  0: 'LOW',
+  1: 'MEDUIM',
+  2: 'HIGH',
+  3: 'URGENT',
+  '0': 'LOW',
+  '1': 'MEDUIM',
+  '2': 'HIGH',
+  '3': 'URGENT',
   Low: 'LOW',
   Medium: 'MEDUIM',
   High: 'HIGH',
@@ -13,6 +21,14 @@ export const priorityToApi = {
 };
 
 export const priorityFromApi = {
+  0: 'Low',
+  1: 'Medium',
+  2: 'High',
+  3: 'Urgent',
+  '0': 'Low',
+  '1': 'Medium',
+  '2': 'High',
+  '3': 'Urgent',
   LOW: 'Low',
   MEDUIM: 'Medium',
   MEDIUM: 'Medium',

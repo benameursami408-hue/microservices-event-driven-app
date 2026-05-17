@@ -167,5 +167,13 @@ public class NotificationWorkflowTests
 
             return Task.FromResult(items.Count);
         }
+
+        public Task<bool> DeleteAsync(long notificationId, long userId, bool isAdmin, CancellationToken cancellationToken = default)
+        {
+            var notification = Notifications.FirstOrDefault(x => x.Id == notificationId && (isAdmin || x.UserId == userId));
+            if (notification == null) return Task.FromResult(false);
+            Notifications.Remove(notification);
+            return Task.FromResult(true);
+        }
     }
 }

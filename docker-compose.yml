@@ -66,7 +66,7 @@ services:
     ports:
       - "127.0.0.1:5001:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Docker
       - Database__AutoMigrate=true
       - ConnectionStrings__DBConnection=Server=sqlserver;Database=AuthDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
@@ -105,7 +105,7 @@ services:
     ports:
       - "127.0.0.1:5002:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Docker
       - Database__AutoMigrate=true
       - ConnectionStrings__DBConnection=Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}
@@ -139,7 +139,7 @@ services:
     ports:
       - "127.0.0.1:5003:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Docker
       - Database__AutoMigrate=true
       - ConnectionStrings__DBConnection=Server=sqlserver;Database=NotificationDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Notifications__AdminEmail=${NOTIFICATIONS_ADMIN_EMAIL:-admin@savpro.local}
@@ -172,7 +172,7 @@ services:
     ports:
       - "127.0.0.1:5004:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Docker
       - Database__AutoMigrate=true
       - ConnectionStrings__DBConnection=Server=sqlserver;Database=InterventionDB;User Id=sa;Password=${SA_PASSWORD:-ChangeMe_SqlServer_2026!};TrustServerCertificate=True;Encrypt=False
       - Jwt__Issuer=${JWT_ISSUER:-AuthService}

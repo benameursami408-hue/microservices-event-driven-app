@@ -59,6 +59,7 @@ export function mapReclamationFromApi(item = {}) {
 
 export function mapReclamationToCreateDto(payload = {}) {
   return {
+    clientId: payload.clientId ? Number(payload.clientId) : undefined,
     description: payload.description || '',
     priority: toApiPriority(payload.priority),
     isBlocking: ['Urgent', 'Critical'].includes(payload.priority),
@@ -74,7 +75,9 @@ export function mapReclamationToCreateDto(payload = {}) {
 }
 
 export function mapReclamationToUpdateDto(payload = {}) {
-  return mapReclamationToCreateDto(payload);
+  const dto = mapReclamationToCreateDto(payload);
+  delete dto.clientId;
+  return dto;
 }
 
 export function getTechnicalReclamationId(reclamationOrId) {

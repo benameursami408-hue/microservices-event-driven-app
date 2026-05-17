@@ -20,7 +20,7 @@ export function AiPriorityAnalysisCard({
   canApply = true,
   applyDisabledReason = 'Cette action est réservée au service SAV ou à l’administrateur.'
 }) {
-  const canApplyCurrentAnalysis = Boolean(reclamation && analysis?.analysisId && canApply);
+  const canApplyCurrentAnalysis = Boolean(reclamation && analysis?.suggestedPriority && canApply);
   const safeError = error ? getFriendlyApiError(error) : '';
 
   return (
@@ -49,15 +49,17 @@ export function AiPriorityAnalysisCard({
 
       {!loading && !safeError && analysis && (
         <div className="ai-priority-result">
-          <div className="meta-grid">
+          <div className="ai-analysis-grid">
             <span><small>Suggested Priority</small><Badge>{analysis.suggestedPriority}</Badge></span>
             <span><small>SLA Risk</small><Badge>{analysis.slaRisk}</Badge></span>
             <span><small>Confidence Score</small><strong>{analysis.confidenceScore}%</strong></span>
             <span><small>Created</small><strong>{formatCreatedAt(analysis.createdAt)}</strong></span>
           </div>
-          <p><strong>Reason:</strong> {analysis.reason || '-'}</p>
-          <p><strong>Recommended Action:</strong> {analysis.recommendedAction || '-'}</p>
-          <p><strong>Detected Keywords:</strong> {analysis.detectedKeywords?.length ? analysis.detectedKeywords.join(', ') : 'None'}</p>
+          <div className="ai-priority-copy">
+            <p><strong>Reason:</strong> {analysis.reason || '-'}</p>
+            <p><strong>Recommended Action:</strong> {analysis.recommendedAction || '-'}</p>
+            <p><strong>Detected Keywords:</strong> {analysis.detectedKeywords?.length ? analysis.detectedKeywords.join(', ') : 'None'}</p>
+          </div>
           {!canApply ? <p className="permission-note">{applyDisabledReason}</p> : null}
           <div className="drawer-actions">
             {canApply ? <Button variant="primary" icon={Sparkles} onClick={onApply} disabled={!canApplyCurrentAnalysis}>Apply Suggestion</Button> : null}

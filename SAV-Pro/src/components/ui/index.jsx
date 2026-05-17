@@ -15,12 +15,15 @@ import {
   MoreVertical,
   Package,
   Search,
+  ShieldAlert,
   ShieldCheck,
   User,
+  UserCog,
   UserRound,
   Wrench,
   XCircle
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export function Logo({ portal = false, compact = false }) {
   return (
@@ -79,7 +82,7 @@ export function Card({ title, icon: Icon, actions, children, className = '' }) {
   );
 }
 
-export function StatCard({ label, value, trend, icon: Icon = LayoutDashboard, tone = 'blue', spark = [] }) {
+export function StatCard({ label, value, trend, trendTone = 'neutral', icon: Icon = LayoutDashboard, tone = 'blue', spark = [] }) {
   const points = spark.length ? spark : [18, 30, 24, 44, 30, 28, 38, 52];
   const max = Math.max(...points);
   const min = Math.min(...points);
@@ -90,14 +93,14 @@ export function StatCard({ label, value, trend, icon: Icon = LayoutDashboard, to
   }).join(' ');
 
   return (
-    <Card className="stat-card">
+    <Card className={`stat-card stat-card-${tone}`}>
       <div className={`stat-icon stat-${tone}`}>
         <Icon size={32} />
       </div>
       <div className="stat-copy">
         <span>{label}</span>
         <strong>{value}</strong>
-        <small>{trend}</small>
+        <small className={`stat-trend stat-trend-${trendTone}`}>{trend}</small>
       </div>
       <svg className={`spark spark-${tone}`} viewBox="0 0 100 54" role="img" aria-label={`${label} trend`}>
         <defs>
@@ -106,12 +109,13 @@ export function StatCard({ label, value, trend, icon: Icon = LayoutDashboard, to
             <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
           </linearGradient>
         </defs>
+        {[16, 30, 44].map(y => <line key={y} x1="4" x2="96" y1={y} y2={y} />)}
         <polyline points={`4,52 ${polyline} 96,52`} fill={`url(#spark-${label.replace(/\s+/g, '-')})`} stroke="none" />
         <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((point, index) => {
           const x = (index / (points.length - 1)) * 92 + 4;
           const y = 48 - ((point - min) / Math.max(max - min, 1)) * 34;
-          return <circle key={`${point}-${index}`} cx={x} cy={y} r="2.4" fill="currentColor" />;
+          return <circle key={`${point}-${index}`} cx={x} cy={y} r={index === points.length - 1 ? '3.2' : '2.1'} fill="currentColor" />;
         })}
       </svg>
     </Card>
@@ -128,17 +132,44 @@ export function SearchInput({ value, onChange, placeholder = 'Search...', classN
 }
 
 export function SelectFilter({ label, icon: Icon = ChevronDown, options = [], value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+  const selectedLabel = value || label;
+
+  useEffect(() => {
+    function closeMenu(event) {
+      if (!wrapperRef.current?.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, []);
+
+  function choose(nextValue) {
+    onChange?.(nextValue);
+    setOpen(false);
+  }
+
   return (
-    <label className="select-filter">
-      <span>{label}</span>
-      <select value={value || ''} onChange={event => onChange?.(event.target.value)}>
+    <div className={`select-filter ${open ? 'open' : ''}`} ref={wrapperRef}>
+      <button type="button" className="select-filter-trigger" onClick={() => setOpen(current => !current)} aria-haspopup="listbox" aria-expanded={open}>
+        <span>{selectedLabel}</span>
+        <Icon size={16} />
+      </button>
+      {open && (
+        <div className="select-filter-menu" role="listbox">
+          <button type="button" className={!value ? 'selected' : ''} onClick={() => choose('')}>{label}</button>
+          {options.map(option => (
+            <button type="button" key={option} className={value === option ? 'selected' : ''} onClick={() => choose(option)}>{option}</button>
+          ))}
+        </div>
+      )}
+      <select value={value || ''} onChange={event => onChange?.(event.target.value)} tabIndex={-1} aria-hidden="true">
         <option value="">{label}</option>
         {options.map(option => (
           <option key={option} value={option}>{option}</option>
         ))}
       </select>
-      <Icon size={16} />
-    </label>
+    </div>
   );
 }
 
@@ -230,10 +261,12 @@ export function Toast({ toast, onClose }) {
 
 const notificationIconMap = {
   warning: AlertTriangle,
+  sla: ShieldAlert,
   calendar: CalendarDays,
   success: CheckCircle,
   report: FileText,
   user: UserRound,
+  assignment: UserCog,
   clock: Clock,
   bell: Bell,
   book: BookOpen,

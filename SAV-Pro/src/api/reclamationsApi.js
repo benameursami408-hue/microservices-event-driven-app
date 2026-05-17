@@ -33,6 +33,12 @@ export async function updateReclamation(id, payload) {
   }));
 }
 
+export async function deleteReclamation(id) {
+  return apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}`, {
+    method: 'DELETE'
+  });
+}
+
 export async function requestPlanning(id, comment = '') {
   return mapReclamationFromApi(await apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}/request-planning`, {
     method: 'PATCH',

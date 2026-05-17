@@ -1,31 +1,36 @@
-# SAV Pro React/Vite Demo
+# SAV Pro Frontend
 
-Frontend React/Vite de demonstration pour une plateforme SAV/CRM operationnelle.
-Les donnees sont persistees dans `localStorage` et le modele est aligne avec les
-entites AuthService, ReclamationService, InterventionService et NotificationService.
+Frontend React/Vite de SAV Pro. L application est backend-driven et consomme le gateway sur `http://localhost:5005`.
 
-## Run
+## Configuration
 
 ```powershell
-npm config set registry https://registry.npmjs.org/
-npm install --registry=https://registry.npmjs.org/
+Copy-Item .env.example .env
+```
+
+Variable disponible:
+
+```env
+VITE_API_BASE_URL=http://localhost:5005
+```
+
+Ne pas ajouter de cle AI/OpenAI dans le frontend. L assistant priorite est gere cote backend avec des regles deterministes.
+
+## Commandes
+
+```powershell
+npm ci
 npm run dev
 npm run build
 ```
 
-Open http://localhost:5173
+Ouvrir `http://localhost:5173`.
 
-## Demo accounts
+## Comptes demo
 
-- Admin: admin@sav.local / admin123
-- SAV: sav@sav.local / sav123
-- Technician: tech@sav.local / tech123
-- Client: client@sav.local / client123
+Tous les comptes seedes par AuthService utilisent `Password123!`.
 
-## Notes
-
-The app stores data in localStorage. Use Settings > Reset demo data after replacing
-an older build.
-
-This repository is frontend-only. It is structured to be connected to real APIs,
-but it does not include a backend implementation.
+- Admin: `admin@savpro.local`
+- SAV: `sav@savpro.local`
+- Technicien: `tech1@savpro.local`
+- Client: `client1@savpro.local`

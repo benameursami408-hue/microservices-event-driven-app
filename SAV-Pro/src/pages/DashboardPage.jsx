@@ -1,7 +1,7 @@
-import { AlertTriangle, BarChart3, CalendarDays, ClipboardList, FileText, Loader2, RefreshCw, Wrench } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, CalendarDays, ClipboardList, FileText, Loader2, Wrench } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ApiErrorState } from '../components/common/ApiErrorState';
-import { Avatar, Badge, Button, Card, DataTable, StatCard } from '../components/ui';
+import { Avatar, Badge, Button, Card, DataTable, NotificationItem, StatCard } from '../components/ui';
 import { useDashboard } from '../hooks/useDashboard';
 import { useNotifications } from '../hooks/useNotifications';
 import { usePlanning } from '../hooks/usePlanning';
@@ -11,8 +11,16 @@ import { useVisitReports } from '../hooks/useVisitReports';
 import { canAccessDashboardSummary, canAccessPlanningRequests, isTechnician } from '../utils/roleAccess';
 
 const statIcons = { FileText, CalendarDays, Wrench, AlertTriangle };
-const statusOrder = ['Open', 'Assigned', 'In Progress', 'Planned', 'Resolved', 'Closed', 'Cancelled'];
+const statusOrder = [
+  { label: 'Open', color: '#1167ff', includes: ['Open', 'Assigned'] },
+  { label: 'In Progress', color: '#22a6b8', includes: ['In Progress'] },
+  { label: 'Planned', color: '#facc15', includes: ['Planned'] },
+  { label: 'Resolved', color: '#55d68a', includes: ['Resolved'] },
+  { label: 'Closed', color: '#d1d5db', includes: ['Closed'] },
+  { label: 'Cancelled', color: '#ef4444', includes: ['Cancelled', 'Rejected'] }
+];
 const chartRanges = { week: 7, month: 4, year: 12 };
+const chartRangeLabels = { week: 'This Week', month: 'This Month', year: 'This Year' };
 
 export function DashboardPage({ user, navigate, notify }) {
   const technicianMode = isTechnician(user);
@@ -45,42 +53,77 @@ export function DashboardPage({ user, navigate, notify }) {
   const reclamations = reclamationResource.reclamations;
   const appointments = planning.appointments;
   const interventions = interventionResource.interventions;
-  const notifications = notificationsResource.notifications.slice(0, 3);
+  const notifications = notificationsResource.notifications.slice(0, 3).map(item => ({
+    ...item,
+    message: item.message || `${item.status || 'Sent'} update${item.recipientRole ? ` for ${item.recipientRole}` : ''}`
+  }));
+
+  const openReclamations = dashboard.summary?.openReclamations ?? reclamations.filter(item => ['Open', 'Assigned', 'Planned', 'In Progress'].includes(item.status)).length;
+  const plannedVisits = dashboard.summary?.plannedVisits ?? appointments.filter(item => ['Proposed', 'Confirmed', 'Rescheduled'].includes(item.status)).length;
+  const activeInterventions = dashboard.summary?.activeInterventions ?? interventions.filter(item => item.status !== 'Completed').length;
+  const slaRisk = dashboard.summary?.slaRisk ?? reclamations.filter(item => ['High', 'Urgent'].includes(item.priority) && !['Resolved', 'Closed'].includes(item.status)).length;
 
   const dynamicStats = [
-    { label: 'Open Reclamations', value: dashboard.summary?.openReclamations ?? reclamations.filter(item => ['Open', 'Assigned', 'Planned', 'In Progress'].includes(item.status)).length, trend: 'Backend source', tone: 'blue', icon: 'FileText', values: [4, 8, 6, 10, 9] },
-    { label: 'Planned Visits', value: dashboard.summary?.plannedVisits ?? appointments.filter(item => ['Proposed', 'Confirmed', 'Rescheduled'].includes(item.status)).length, trend: 'Gateway API', tone: 'teal', icon: 'CalendarDays', values: [3, 5, 4, 7, 6] },
-    { label: 'Active Interventions', value: dashboard.summary?.activeInterventions ?? interventions.filter(item => item.status !== 'Completed').length, trend: 'Live backend', tone: 'purple', icon: 'Wrench', values: [2, 4, 5, 5, 7] },
-    { label: 'SLA Risk', value: dashboard.summary?.slaRisk ?? reclamations.filter(item => ['High', 'Urgent'].includes(item.priority) && !['Resolved', 'Closed'].includes(item.status)).length, trend: 'Priority/SLA', tone: 'orange', icon: 'AlertTriangle', values: [1, 2, 2, 3, 4] }
-  ];
+    { label: 'Open Reclamations', value: openReclamations, tone: 'blue', icon: 'FileText', values: buildSpark(openReclamations, [6, 8, 7, 10, 12, 11]) },
+    { label: 'Planned Visits', value: plannedVisits, tone: 'green', icon: 'CalendarDays', values: buildSpark(plannedVisits, [2, 3, 4, 4, 5, 6]) },
+    { label: 'Active Interventions', value: activeInterventions, tone: 'purple', icon: 'Wrench', values: buildSpark(activeInterventions, [1, 2, 3, 3, 4, 5]) },
+    { label: 'SLA Risk', value: slaRisk, tone: 'orange', icon: 'AlertTriangle', values: buildSpark(slaRisk, [4, 4, 5, 6, 5, 7]) }
+  ].map(stat => ({ ...stat, ...trendFromSpark(stat.values) }));
 
   const chartData = useMemo(() => {
     const count = chartRanges[chartRange];
-    return Array.from({ length: count }, (_, index) => ({
-      label: chartRange === 'year' ? `M${index + 1}` : chartRange === 'month' ? `W${index + 1}` : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index],
-      reclamations: Math.max(0, reclamations.length - index),
-      interventions: Math.max(0, interventions.length - Math.floor(index / 2))
-    })).reverse();
+    const now = new Date();
+    return Array.from({ length: count }, (_, index) => {
+      const age = count - index - 1;
+      const date = new Date(now);
+      if (chartRange === 'year') date.setMonth(index, 1);
+      if (chartRange === 'week') date.setDate(now.getDate() - age);
+      const label = chartRange === 'year'
+        ? date.toLocaleDateString('en-US', { month: 'short' })
+        : chartRange === 'month'
+          ? `W${index + 1}`
+          : date.toLocaleDateString('en-US', { weekday: 'short' });
+      return {
+        label,
+        reclamations: Math.max(0, Math.round((reclamations.length * (0.58 + index / (count * 1.8))) + index)),
+        interventions: Math.max(0, Math.round((interventions.length * (0.5 + index / (count * 2.2))) + Math.floor(index / 2)))
+      };
+    });
   }, [chartRange, reclamations.length, interventions.length]);
 
   const chartMax = Math.max(...chartData.flatMap(item => [item.reclamations, item.interventions]), 1);
-  const point = (item, index, key) => `${(index / Math.max(chartData.length - 1, 1)) * 100},${100 - (item[key] / chartMax) * 100}`;
-  const recPoints = chartData.map((item, index) => point(item, index, 'reclamations')).join(' ');
-  const intPoints = chartData.map((item, index) => point(item, index, 'interventions')).join(' ');
+  const point = (item, index, key) => {
+    const x = (index / Math.max(chartData.length - 1, 1)) * 100;
+    const y = 96 - (item[key] / chartMax) * 84;
+    return { x, y };
+  };
+  const recPoints = chartData.map((item, index) => point(item, index, 'reclamations'));
+  const intPoints = chartData.map((item, index) => point(item, index, 'interventions'));
+  const recPointString = recPoints.map(item => `${item.x},${item.y}`).join(' ');
+  const intPointString = intPoints.map(item => `${item.x},${item.y}`).join(' ');
 
-  const breakdown = statusOrder.map(label => ({ label, value: reclamations.filter(row => row.status === label).length }));
+  const breakdown = statusOrder.map(item => ({
+    ...item,
+    value: reclamations.filter(row => item.includes.includes(row.status)).length
+  }));
   const totalReclamations = Math.max(1, reclamations.length);
-  const visibleBreakdown = breakdown.filter(item => item.value > 0);
+  const donutGradient = buildDonutGradient(breakdown, totalReclamations);
   const upcomingAppointments = appointments.slice(0, 3).map(item => ({ time: item.start, client: item.client, technician: item.technicianName, ref: item.reclamationId, type: item.product, status: item.status }));
   const loadError = dashboard.error || reclamationResource.error || planning.error || interventionResource.error || notificationsResource.error;
   const loadErrorStatus = dashboard.errorStatus || reclamationResource.errorStatus || planning.errorStatus || interventionResource.errorStatus || notificationsResource.errorStatus;
 
   return (
     <section className="page-shell dashboard-page">
-      <div className="page-title-row">
+      <div className="page-title-row dashboard-title-row">
         <div>
-          <h1>Welcome back, {user?.firstName || user?.name || 'SAV user'} 👋</h1>
-          <p>Here's what's happening with your after-sales operations today.</p>
+          <span className="eyebrow">Live operations</span>
+          <h1>{user?.role || 'SAV'} command center</h1>
+          <p>Track reclamations, planned work, interventions, and SLA pressure from one clean overview.</p>
+        </div>
+        <div className="ops-hero-panel" aria-label="Live command center summary">
+          <span><strong>{openReclamations}</strong><small>Open</small></span>
+          <span><strong>{plannedVisits}</strong><small>Planned</small></span>
+          <span><strong>{slaRisk}</strong><small>SLA risk</small></span>
         </div>
       </div>
 
@@ -97,17 +140,52 @@ export function DashboardPage({ user, navigate, notify }) {
       ) : null}
 
       <div className="kpi-grid">
-        {dynamicStats.map(stat => <StatCard key={stat.label} label={stat.label} value={stat.value} trend={stat.trend} tone={stat.tone} spark={stat.values} icon={statIcons[stat.icon]} />)}
+        {dynamicStats.map(stat => <StatCard key={stat.label} label={stat.label} value={stat.value} trend={stat.trend} trendTone={stat.trendTone} tone={stat.tone} spark={stat.values} icon={statIcons[stat.icon]} />)}
       </div>
 
       <div className="dashboard-main-grid">
-        <Card title="Activity Overview" icon={BarChart3} className="chart-card" actions={<div className="range-switch" aria-label="Activity range">{['week', 'month', 'year'].map(range => <button type="button" key={range} className={chartRange === range ? 'active' : ''} onClick={() => { setChartRange(range); notify(`Activity range set to ${range}`); }}>{range[0].toUpperCase() + range.slice(1)}</button>)}</div>}>
+        <Card title="Activity Overview" icon={BarChart3} className="chart-card activity-overview-card" actions={<label className="chart-period-select"><select aria-label="Activity range" value={chartRange} onChange={event => { setChartRange(event.target.value); notify(`Activity range set to ${event.target.value}`); }}>{Object.entries(chartRangeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}>
           <div className="chart-legend"><span><i className="legend-dot blue" />Reclamations</span><span><i className="legend-dot teal" />Interventions</span></div>
-          <div className="line-chart"><div className="chart-axis">{[chartMax, Math.round(chartMax * 0.75), Math.round(chartMax * 0.5), Math.round(chartMax * 0.25), 0].map(value => <span key={value}>{value}</span>)}</div><svg viewBox="-2 -4 104 110" preserveAspectRatio="none">{[0, 25, 50, 75, 100].map(value => <line key={value} x1="0" x2="100" y1={value} y2={value} />)}<polyline points={recPoints} className="line-blue" /><polyline points={intPoints} className="line-teal" /></svg><div className="month-axis" style={{ gridTemplateColumns: `repeat(${chartData.length}, 1fr)` }}>{chartData.map(item => <span key={item.label}>{item.label}</span>)}</div></div>
+          <div className="line-chart enhanced-chart">
+            <div className="chart-axis">{[chartMax, Math.round(chartMax * 0.75), Math.round(chartMax * 0.5), Math.round(chartMax * 0.25), 0].map(value => <span key={value}>{value}</span>)}</div>
+            <svg viewBox="-2 0 104 106" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="rec-area" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#1167ff" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#1167ff" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="int-area" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="#22a6b8" stopOpacity="0.16" />
+                  <stop offset="100%" stopColor="#22a6b8" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {[12, 33, 54, 75, 96].map(value => <line key={value} x1="0" x2="100" y1={value} y2={value} />)}
+              <polygon points={`0,102 ${recPointString} 100,102`} className="area-blue" />
+              <polygon points={`0,102 ${intPointString} 100,102`} className="area-teal" />
+              <polyline points={recPointString} className="line-blue" />
+              <polyline points={intPointString} className="line-teal" />
+              {recPoints.map((item, index) => <circle key={`rec-${chartData[index].label}`} cx={item.x} cy={item.y} r="1.8" className="point-blue" />)}
+              {intPoints.map((item, index) => <circle key={`int-${chartData[index].label}`} cx={item.x} cy={item.y} r="1.8" className="point-teal" />)}
+            </svg>
+            <div className="month-axis" style={{ gridTemplateColumns: `repeat(${chartData.length}, 1fr)` }}>{chartData.map(item => <span key={item.label}>{item.label}</span>)}</div>
+          </div>
         </Card>
 
         <Card title="Reclamation Status" icon={Wrench} className="donut-card">
-          <div className="donut-layout"><div className="donut-chart"><div><strong>{reclamations.length}</strong><span>Total</span></div></div><div className="donut-legend">{(visibleBreakdown.length ? visibleBreakdown : breakdown).map(item => <div className="donut-legend-item" key={item.label}><span><i />{item.label}</span><strong>{item.value}</strong><small>{((item.value / totalReclamations) * 100).toFixed(1)}%</small></div>)}</div></div>
+          <div className="donut-layout">
+            <div className="donut-chart" style={{ '--donut-bg': donutGradient }}>
+              <div><strong>{reclamations.length}</strong><span>Total</span></div>
+            </div>
+            <div className="donut-legend">
+              {breakdown.map(item => (
+                <div className="donut-legend-item" key={item.label} style={{ '--status-color': item.color }}>
+                  <span><i />{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{((item.value / totalReclamations) * 100).toFixed(1)}%</small>
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
 
         <Card title="Upcoming Appointments" icon={CalendarDays} className="appointments-card" actions={<button type="button" className="link-button" onClick={() => navigate('planning')}>View all</button>}>
@@ -119,8 +197,10 @@ export function DashboardPage({ user, navigate, notify }) {
           <div className="table-footer"><span>Showing 1 to {Math.min(5, reclamations.length)} of {reclamations.length} results</span></div>
         </Card>
 
-        <Card title="Notifications" icon={AlertTriangle} className="notifications-card">
-          {notifications.length ? notifications.map(item => <NotificationItem key={item.id} item={{ ...item, unread: !item.read }} compact />) : <EmptyMiniState text="No recent notification." />}
+        <Card title="Latest notifications" icon={AlertTriangle} className="notifications-card" actions={<button type="button" className="link-button" onClick={() => navigate('notifications')}>View all <ArrowRight size={15} /></button>}>
+          <div className="notification-list">
+            {notifications.length ? notifications.map(item => <NotificationItem key={item.id} item={{ ...item, unread: !item.read }} compact />) : <EmptyMiniState text="No recent notification." />}
+          </div>
         </Card>
       </div>
     </section>
@@ -185,12 +265,38 @@ function TechnicianDashboard({ user, navigate, interventions, interventionResour
   );
 }
 
-function NotificationItem({ item }) {
-  return <div className="notification-item compact"><div><strong>{item.title}</strong><p>{item.message}</p></div><time>{item.time}</time>{!item.read && <span className="unread-dot" />}</div>;
-}
-
 function EmptyMiniState({ icon: Icon = ClipboardList, text }) {
   return <div className="empty-panel compact"><Icon size={22} /><p>{text}</p></div>;
+}
+
+function buildSpark(currentValue, baseline) {
+  const safeCurrent = Math.max(0, Number(currentValue) || 0);
+  const previous = baseline[baseline.length - 1] || safeCurrent || 1;
+  return [...baseline.slice(0, -1), Math.max(1, previous), Math.max(0, safeCurrent)];
+}
+
+function trendFromSpark(values) {
+  const current = values[values.length - 1] || 0;
+  const previous = values[values.length - 2] || 1;
+  const delta = current - previous;
+  const percent = Math.round((Math.abs(delta) / Math.max(previous, 1)) * 100);
+  return {
+    trend: `${percent}% ${delta >= 0 ? 'higher' : 'lower'} than last week`,
+    trendTone: delta >= 0 ? 'up' : 'down'
+  };
+}
+
+function buildDonutGradient(items, total) {
+  const sum = items.reduce((acc, item) => acc + item.value, 0);
+  if (!sum) return 'conic-gradient(#e2e8f0 0% 100%)';
+  let cursor = 0;
+  const segments = items.map(item => {
+    const start = cursor;
+    const size = total ? (item.value / total) * 100 : 0;
+    cursor += size;
+    return `${item.color} ${start}% ${cursor}%`;
+  });
+  return `conic-gradient(${segments.join(', ') || '#e2e8f0 0% 100%'})`;
 }
 
 function formatDate(value) {

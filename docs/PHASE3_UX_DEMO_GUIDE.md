@@ -10,7 +10,7 @@ Cette phase ne change pas la logique metier. Elle rend le projet plus facile a c
 - Ajout de raccourcis de demo dans le dashboard Admin.
 - Clarification des libelles visibles dans l interface.
 - Correction de petites repetitions dans le dashboard Admin.
-- Ajout d un fichier central `front/src/utils/demoGuide.js` pour garder le scenario de test au meme endroit.
+- Ajout d un fichier central `SAV-Pro/src/utils/demoGuide.js` pour garder le scenario de test au meme endroit.
 
 ## Scenario recommande
 
@@ -23,14 +23,14 @@ Cette phase ne change pas la logique metier. Elle rend le projet plus facile a c
 
 ## Fichiers modifies ou ajoutes
 
-- `front/src/pages/DemoGuidePage.jsx`
-- `front/src/components/RoleNextSteps.jsx`
-- `front/src/utils/demoGuide.js`
-- `front/src/App.jsx`
-- `front/src/layouts/AppLayout.jsx`
-- `front/src/pages/DashboardPage.jsx`
-- `front/src/pages/AdminDashboardPage.jsx`
-- `front/src/utils/enums.js`
+- `SAV-Pro/src/pages/DemoGuidePage.jsx`
+- `SAV-Pro/src/components/RoleNextSteps.jsx`
+- `SAV-Pro/src/utils/demoGuide.js`
+- `SAV-Pro/src/App.jsx`
+- `SAV-Pro/src/layouts/AppLayout.jsx`
+- `SAV-Pro/src/pages/DashboardPage.jsx`
+- `SAV-Pro/src/pages/AdminDashboardPage.jsx`
+- `SAV-Pro/src/utils/enums.js`
 
 ## Verification locale
 

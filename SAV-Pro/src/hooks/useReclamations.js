@@ -1,5 +1,16 @@
 import { useCallback } from 'react';
-import { createReclamation, getReclamation, getReclamationHistory, listReclamations, overridePriority, planReclamation, requestPlanning } from '../api/reclamationsApi';
+import {
+  assignToSav,
+  createReclamation,
+  deleteReclamation,
+  getReclamation,
+  getReclamationHistory,
+  listReclamations,
+  overridePriority,
+  planReclamation,
+  requestPlanning,
+  updateReclamation
+} from '../api/reclamationsApi';
 import { analyzeReclamationPriority, applyAiPriorityAnalysis, getLatestAiPriorityAnalysis } from '../api/aiApi';
 import { useApiResource } from './useApiResource';
 
@@ -15,6 +26,21 @@ export function useReclamations(filters = {}, enabled = true) {
     reload: resource.reload,
     create: async payload => {
       const result = await createReclamation(payload);
+      await resource.reload();
+      return result;
+    },
+    update: async (reclamation, payload) => {
+      const result = await updateReclamation(reclamation, payload);
+      await resource.reload();
+      return result;
+    },
+    remove: async reclamation => {
+      const result = await deleteReclamation(reclamation);
+      await resource.reload();
+      return result;
+    },
+    assignToSav: async (reclamation, sav) => {
+      const result = await assignToSav(reclamation, sav);
       await resource.reload();
       return result;
     },

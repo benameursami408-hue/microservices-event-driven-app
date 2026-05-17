@@ -4,7 +4,6 @@ import {
   CalendarDays,
   ChevronDown,
   FileText,
-  Home,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -14,7 +13,6 @@ import { useState } from 'react';
 import { Avatar, IconButton, Logo } from '../ui';
 
 const clientNav = [
-  { id: 'client', label: 'Home', icon: Home },
   { id: 'client', label: 'My Requests', icon: LayoutDashboard },
   { id: 'client-appointments', label: 'Appointments', icon: CalendarDays },
   { id: 'client-reports', label: 'Visit Reports', icon: FileText },
@@ -40,7 +38,7 @@ export function ClientPortalLayout({ user, active = 'client', onNavigate, onLogo
               <button
                 type="button"
                 key={`${item.label}-${index}`}
-                className={active === item.id && item.label === 'My Requests' ? 'active' : ''}
+                className={active === item.id ? 'active' : ''}
                 onClick={() => onNavigate(item.id)}
               >
                 <Icon size={20} />

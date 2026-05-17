@@ -4,15 +4,13 @@
 
 The backend and frontend are partially compatible after integration.
 
-The backend already exposes the main public API surface through Ocelot on `http://localhost:5005` for authentication, reclamations, planning, realisations/interventions and notifications. The frontend was originally mock/localStorage-first and synchronous. It now has a dual-mode API layer controlled by:
+The backend exposes the main public API surface through Ocelot on `http://localhost:5005` for authentication, reclamations, planning, realisations/interventions and notifications. The frontend is now backend-driven and configured by:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5005
-VITE_USE_MOCKS=false
-VITE_AI_API_ENABLED=false
 ```
 
-When `VITE_USE_MOCKS=false`, login and the main data-loading snapshot call the backend through the gateway. Core write operations for reclamations, planning appointments, interventions and notifications call backend APIs when the loaded row contains a backend technical ID. Mock fallback remains for features where the backend endpoint is missing or the UI object only has a display reference.
+Core write operations for reclamations, planning appointments, interventions and notifications call backend APIs through the gateway. Legacy mock/localStorage flags are no longer part of the active frontend configuration.
 
 ## Architecture map
 
@@ -118,7 +116,7 @@ No CSS, layout, sidebar, topbar, card, badge, table, icon or visual structure fi
 - Token handling: token is stored in `sav-pro-api-token-v1`; each API request sends `Authorization: Bearer <token>` when available.
 - 401 handling: token/session are cleared and the UI redirects to `/login`.
 - Error handling: `ApiError` includes `message`, `status`, `details` and `path`.
-- Mock fallback: `VITE_USE_MOCKS=true` keeps the original localStorage services. `VITE_USE_MOCKS=false` uses backend login and backend snapshot loading, with local fallback for missing or unmapped features.
+- Backend mode: business workflows use the gateway/backend contracts.
 - Backend gateway: frontend points to ApiGateway, not individual services.
 
 ## AI Priority integration
@@ -128,7 +126,7 @@ No CSS, layout, sidebar, topbar, card, badge, table, icon or visual structure fi
 - Current implementation: deterministic/rule-based, not an OpenAI call.
 - Security: no AI key or OpenAI call is made from the frontend.
 - Switch to real AI later: replace `AiPriorityService.Analyze` internals with a backend-side provider and keep the same DTO contract.
-- Fallback: if `VITE_AI_API_ENABLED=false` or the backend endpoint fails, frontend uses the local rule-based fallback.
+- AI priority: the active implementation calls the backend rule-based endpoint and does not expose AI keys in the frontend.
 
 ## Runtime configuration
 
@@ -167,7 +165,7 @@ Backend build result: not executed in this environment because `dotnet` is not i
 ## Remaining limitations
 
 - Backend `dotnet build` still needs to be run on a machine with the .NET SDK installed.
-- Backend seeded users do not match the frontend demo buttons exactly. Backend seed examples include `admin@local`, `sami.benameur.client@sav.local`, `youssef.trabelsi.sav@sav.local`, and `nour.benali.tech@sav.local`.
+- Backend seeded users are documented in the root `README.md`: `admin@savpro.local`, `sav@savpro.local`, `tech1@savpro.local` to `tech4@savpro.local`, and `client1@savpro.local` to `client6@savpro.local`, all with `Password123!`.
 - `GET /api/visit-reports` is still missing; visit report list remains mock/local unless a dedicated report controller is added.
 - AI Apply Suggestion UI/history/notification workflow is not fully wired because there was no existing AI card/UI to preserve.
 - Client status is not persisted in ReclamationService; active/inactive belongs to AuthService `User.IsActive`.

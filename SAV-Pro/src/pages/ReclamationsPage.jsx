@@ -2,12 +2,19 @@ import {
   AlertTriangle,
   CalendarDays,
   CalendarPlus,
+  CheckCircle,
   Download,
   Filter,
   Loader2,
+  Mail,
+  MapPin,
   Package,
+  Pencil,
+  Phone,
   Plus,
-  RefreshCw,
+  Save,
+  ShieldCheck,
+  Trash2,
   User,
   UserPlus,
   X
@@ -22,9 +29,11 @@ import { useReclamations } from '../hooks/useReclamations';
 import { useUsers } from '../hooks/useUsers';
 import { getFriendlyApiError } from '../utils/errorMessages';
 import { canAccessPlanningRequests, canApplyAiPriority, canAssignTechnician, canCreateReclamation } from '../utils/roleAccess';
+import { fromApiReclamationStatus } from '../api/mappers/statusMapper';
 
 const tabs = ['All', 'Open', 'Assigned', 'In Progress', 'Resolved', 'Closed'];
 const pageSize = 10;
+const blankReclamationForm = { clientId: '', client: '', product: '', model: '', serial: '', priority: 'High', description: '', site: '' };
 
 function filterReclamations(rows, { status, query, client, product, model, priority }) {
   return rows.filter(item => {
@@ -40,6 +49,31 @@ function filterReclamations(rows, { status, query, client, product, model, prior
 
 function technicalIdOf(row) {
   return row?.technicalId || row?.raw?.id || row?.id;
+}
+
+function clientDetailsFor(row, clients) {
+  const byId = clients.find(client => String(client.id) === String(row?.clientId));
+  const byName = clients.find(client => client.name === row?.client);
+  const client = byId || byName || {};
+  return {
+    contact: client.contact || row?.contact || row?.client || 'Not provided',
+    email: client.email || row?.email || 'Not provided',
+    phone: client.phone || client.phoneNumber || row?.phone || 'Not provided',
+    location: client.location || row?.location || row?.site || 'Not provided'
+  };
+}
+
+function formFromReclamation(row = {}) {
+  return {
+    clientId: row.clientId || '',
+    client: row.client || '',
+    product: row.product || '',
+    model: row.model === '-' ? '' : row.model || '',
+    serial: row.serial === '-' ? '' : row.serial || '',
+    priority: row.priority || 'High',
+    description: row.description || '',
+    site: row.site || row.location || ''
+  };
 }
 
 export function ReclamationsPage({ user, notify }) {
@@ -62,7 +96,10 @@ export function ReclamationsPage({ user, notify }) {
   const [filters, setFilters] = useState({ client: '', product: '', model: '', priority: '' });
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ client: '', product: '', model: '', serial: '', priority: 'High', description: '', site: '' });
+  const [form, setForm] = useState(blankReclamationForm);
+  const [editingReclamation, setEditingReclamation] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [pendingTechnicianId, setPendingTechnicianId] = useState('');
   const [errors, setErrors] = useState({});
   const [history, setHistory] = useState([]);
   const [historyError, setHistoryError] = useState('');
@@ -72,6 +109,7 @@ export function ReclamationsPage({ user, notify }) {
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
   const selected = reclamations.find(item => item.id === selectedId) || filteredRows[0] || reclamations[0];
+  const selectedClientDetails = selected ? clientDetailsFor(selected, clients) : null;
 
   const counts = useMemo(() => {
     return tabs.reduce((acc, tab) => {
@@ -110,10 +148,10 @@ export function ReclamationsPage({ user, notify }) {
       .then(rows => {
         if (!active) return;
         setHistory((rows || []).map(item => ({
-          title: item.comment || `${item.fromStatus} → ${item.toStatus}`,
+          title: item.comment || `${fromApiReclamationStatus(item.fromStatus)} -> ${fromApiReclamationStatus(item.toStatus)}`,
           body: item.actorRole ? `By ${item.actorRole}` : '',
           time: item.occurredAt ? new Date(item.occurredAt).toLocaleString() : '',
-          status: String(item.toStatus || ''),
+          status: fromApiReclamationStatus(item.toStatus),
           color: 'blue'
         })));
       })
@@ -132,6 +170,49 @@ export function ReclamationsPage({ user, notify }) {
     setFilters(current => ({ ...current, [key]: value }));
   }
 
+  function openNewReclamation() {
+    setEditingReclamation(null);
+    setErrors({});
+    setForm(blankReclamationForm);
+    setModal('new');
+  }
+
+  function openEditReclamation(row) {
+    setEditingReclamation(row);
+    setErrors({});
+    setForm(formFromReclamation(row));
+    setModal('edit');
+  }
+
+  function exportVisibleRows() {
+    const columns = [
+      ['Reference', 'id'],
+      ['Client', 'client'],
+      ['Product', 'product'],
+      ['Model', 'model'],
+      ['Serial Number', 'serial'],
+      ['Priority', 'priority'],
+      ['Status', 'status'],
+      ['Created Date', 'created'],
+      ['Assigned Technician', 'assigned']
+    ];
+    const escapeCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [
+      columns.map(([label]) => escapeCsv(label)).join(','),
+      ...filteredRows.map(row => columns.map(([, key]) => escapeCsv(row[key])).join(','))
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `reclamations-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+    notify('CSV export downloaded');
+  }
+
   async function submitReclamation(event) {
     event.preventDefault();
     if (!allowCreateReclamation) {
@@ -139,23 +220,51 @@ export function ReclamationsPage({ user, notify }) {
       return;
     }
 
+    const selectedClient = clients.find(client => String(client.id) === String(form.clientId));
     const nextErrors = {
-      client: form.client ? '' : 'Client is required.',
+      client: form.clientId || editingReclamation ? '' : 'Client is required.',
       product: form.product ? '' : 'Product is required.',
-      description: form.description ? '' : 'Description is required.',
       priority: form.priority ? '' : 'Priority is required.'
     };
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
     try {
-      const reclamation = await reclamationResource.create(form);
+      const payload = {
+        ...form,
+        client: selectedClient?.name || form.client || editingReclamation?.client || '',
+        clientId: form.clientId || editingReclamation?.clientId || ''
+      };
+      const reclamation = editingReclamation
+        ? await reclamationResource.update(editingReclamation, payload)
+        : await reclamationResource.create(payload);
       setSelectedId(reclamation.id);
       setModal(null);
-      setForm({ client: '', product: '', model: '', serial: '', priority: 'High', description: '', site: '' });
-      notify('Reclamation created successfully');
+      setForm(blankReclamationForm);
+      setEditingReclamation(null);
+      notify(editingReclamation ? 'Reclamation updated successfully' : 'Reclamation created successfully');
     } catch (err) {
       notify(getFriendlyApiError(err), 'error');
     }
+  }
+
+  async function confirmDeleteReclamation() {
+    if (!deleteTarget) return;
+    try {
+      await reclamationResource.remove(deleteTarget);
+      setDeleteTarget(null);
+      setModal(null);
+      const next = reclamations.find(item => item.id !== deleteTarget.id);
+      setSelectedId(next?.id || '');
+      notify('Reclamation deleted');
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    }
+  }
+
+  async function ensureSavAssigned(row) {
+    if (!row) return row;
+    if (row.status !== 'Open') return row;
+    return reclamationResource.assignToSav(row, user);
   }
 
   async function handleCreatePlanningRequest() {
@@ -165,25 +274,28 @@ export function ReclamationsPage({ user, notify }) {
       return;
     }
     try {
-      await reclamationResource.requestPlanning(selected, 'Planning requested from SAV Pro UI');
+      const assigned = await ensureSavAssigned(selected);
+      await reclamationResource.requestPlanning(assigned, 'Planning requested from SAV Pro UI');
       notify('Planning request sent to backend');
     } catch (err) {
       notify(getFriendlyApiError(err), 'error');
     }
   }
 
-  async function handleAssign(technicianId) {
+  async function handleAssign() {
     if (!allowAssignTechnician) {
       notify('Cette action est réservée au service SAV ou à l’administrateur.', 'error');
       return;
     }
-    const technician = technicians.find(item => String(item.id) === String(technicianId));
+    const technician = technicians.find(item => String(item.id) === String(pendingTechnicianId));
     if (!technician || !selected) return;
     try {
-      await reclamationResource.planTechnician(selected, technician, { planningNote: 'Technician planned from SAV Pro UI' });
+      const assigned = await ensureSavAssigned(selected);
+      await reclamationResource.planTechnician(assigned, technician, { planningNote: selected.technicianId ? 'Technician changed from SAV Pro UI' : 'Technician assigned from SAV Pro UI' });
       setSelectedId(selected.id);
       setModal(null);
-      notify('Technician assignment sent to backend');
+      setPendingTechnicianId('');
+      notify(selected.technicianId ? 'Technician changed' : 'Technician assigned');
     } catch (err) {
       notify(getFriendlyApiError(err), 'error');
     }
@@ -225,10 +337,10 @@ export function ReclamationsPage({ user, notify }) {
       await notificationsResource.reload();
       const rows = await reclamationResource.getHistory(selected);
       setHistory((rows || []).map(item => ({
-        title: item.comment || `${item.fromStatus} → ${item.toStatus}`,
+        title: item.comment || `${fromApiReclamationStatus(item.fromStatus)} -> ${fromApiReclamationStatus(item.toStatus)}`,
         body: item.actorRole ? `By ${item.actorRole}` : '',
         time: item.occurredAt ? new Date(item.occurredAt).toLocaleString() : '',
-        status: String(item.toStatus || ''),
+        status: fromApiReclamationStatus(item.toStatus),
         color: 'blue'
       })));
       notify('AI priority suggestion applied in backend');
@@ -240,14 +352,21 @@ export function ReclamationsPage({ user, notify }) {
   const isLoading = reclamationResource.loading || clientsResource.loading || techniciansResource.loading;
   const loadError = reclamationResource.error || clientsResource.error || techniciansResource.error;
   const loadErrorStatus = reclamationResource.errorStatus || clientsResource.errorStatus || techniciansResource.errorStatus;
+  const canRequestSelectedPlanning = Boolean(selected && allowPlanningRequest && ['Open', 'Assigned'].includes(selected.status));
+  const canAssignSelectedTechnician = Boolean(selected && allowAssignTechnician && ['Open', 'Assigned', 'Planned'].includes(selected.status));
 
   return (
     <section className="reclamations-page split-admin-page">
       <div className="reclamation-content">
-        <div className="page-title-row with-top-gap">
+        <div className="page-title-row with-top-gap reclamations-title-row">
           <div>
+            <span className="eyebrow">Service queue</span>
             <h1>Reclamations</h1>
             <p>Manage and track all customer reclamations</p>
+          </div>
+          <div className="page-title-kpis">
+            <span><strong>{counts.Open || 0}</strong><small>Open</small></span>
+            <span><strong>{counts['In Progress'] || 0}</strong><small>In progress</small></span>
           </div>
         </div>
 
@@ -263,8 +382,8 @@ export function ReclamationsPage({ user, notify }) {
             <SelectFilter label="All Products" options={options.products} value={filters.product} onChange={value => updateFilter('product', value)} />
             <SelectFilter label="All Models" options={options.models} value={filters.model} onChange={value => updateFilter('model', value)} />
             <SelectFilter label="All Priorities" options={options.priorities} value={filters.priority} onChange={value => updateFilter('priority', value)} />
-            <button type="button" className="date-filter" onClick={() => notify('Date filter applies to backend results when supported')}>
-              Backend range
+            <button type="button" className="date-filter" onClick={() => notify('Date filter applies to the current result set')}>
+              Date range
               <CalendarDays size={16} />
             </button>
             <Button icon={Filter} onClick={() => notify('Filters applied')}>Filters</Button>
@@ -283,8 +402,8 @@ export function ReclamationsPage({ user, notify }) {
 
           <div className="table-toolbar">
             <SearchInput value={query} onChange={setQuery} placeholder="Search reclamations..." />
-            <Button icon={Download} onClick={() => notify('Export prepared from current backend rows')}>Export</Button>
-            {allowCreateReclamation ? <Button variant="primary" icon={Plus} onClick={() => setModal('new')}>New Reclamation</Button> : null}
+            <Button icon={Download} onClick={exportVisibleRows}>Export</Button>
+            {allowCreateReclamation ? <Button variant="primary" icon={Plus} onClick={openNewReclamation}>New Reclamation</Button> : null}
           </div>
 
           {isLoading ? (
@@ -310,6 +429,20 @@ export function ReclamationsPage({ user, notify }) {
                     <span className="avatar-cell">
                       <Avatar name={row.assigned} initials={row.assignedAvatar} size="sm" />
                       {row.assigned}
+                    </span>
+                  ) : '-'
+                },
+                {
+                  key: 'actions',
+                  label: 'Actions',
+                  render: row => allowCreateReclamation ? (
+                    <span className="row-actions">
+                      <button type="button" className="table-icon-action" title="Edit reclamation" onClick={event => { event.stopPropagation(); openEditReclamation(row); }}>
+                        <Pencil size={15} />
+                      </button>
+                      <button type="button" className="table-icon-action danger" title="Delete reclamation" onClick={event => { event.stopPropagation(); setDeleteTarget(row); setModal('delete'); }}>
+                        <Trash2 size={15} />
+                      </button>
                     </span>
                   ) : '-'
                 }
@@ -376,13 +509,12 @@ export function ReclamationsPage({ user, notify }) {
           <section className="info-columns">
             <div>
               <h3>Client Information</h3>
-              <InfoLine icon={User} label={selected.client} />
-              <dl>
-                <dt>Contact</dt><dd>{selected.contact}</dd>
-                <dt>Email</dt><dd>{selected.email}</dd>
-                <dt>Phone</dt><dd>{selected.phone}</dd>
-                <dt>Location</dt><dd>{selected.location}</dd>
-              </dl>
+              <div className="contact-data-grid">
+                <InfoTile icon={User} label="Contact" value={selectedClientDetails.contact} />
+                <InfoTile icon={Mail} label="Email" value={selectedClientDetails.email} />
+                <InfoTile icon={Phone} label="Phone" value={selectedClientDetails.phone} />
+                <InfoTile icon={MapPin} label="Location" value={selectedClientDetails.location} />
+              </div>
             </div>
             <div>
               <h3>Product Information</h3>
@@ -399,16 +531,15 @@ export function ReclamationsPage({ user, notify }) {
           <div className="meta-grid">
             <span><small>Priority</small><Badge>{selected.priority}</Badge></span>
             <span><small>Created Date</small><strong>{selected.created}</strong></span>
-            <span><small>Source</small><strong>{selected.source}</strong></span>
             <span><small>Reported By</small><strong>{selected.contact}</strong></span>
           </div>
 
-          {(allowPlanningRequest || allowAssignTechnician) && (
+          {(canRequestSelectedPlanning || canAssignSelectedTechnician) && (
             <section className="drawer-section">
               <h3>Actions</h3>
               <div className="drawer-actions">
-                {allowPlanningRequest ? <Button icon={CalendarPlus} onClick={handleCreatePlanningRequest}>Create Planning Request</Button> : null}
-                {allowAssignTechnician ? <Button variant="primary" icon={UserPlus} onClick={() => setModal('assign')}>Assign Technician</Button> : null}
+                {canRequestSelectedPlanning ? <Button icon={CalendarPlus} onClick={handleCreatePlanningRequest}>Create Planning Request</Button> : null}
+                {canAssignSelectedTechnician ? <Button variant="primary" icon={UserPlus} onClick={() => { setPendingTechnicianId(String(selected.technicianId || '')); setModal('assign'); }}>{selected.technicianId ? 'Change Technician' : 'Assign Technician'}</Button> : null}
               </div>
             </section>
           )}
@@ -420,22 +551,25 @@ export function ReclamationsPage({ user, notify }) {
         </aside>
       )}
 
-      {modal === 'new' && allowCreateReclamation && (
-        <Modal title="New Reclamation" onClose={() => setModal(null)} footer={(
+      {(modal === 'new' || modal === 'edit') && allowCreateReclamation && (
+        <Modal title={editingReclamation ? 'Edit Reclamation' : 'New Reclamation'} onClose={() => { setModal(null); setEditingReclamation(null); }} footer={(
           <>
-            <Button onClick={() => setModal(null)}>Cancel</Button>
-            <Button variant="primary" icon={Plus} onClick={submitReclamation}>Create Reclamation</Button>
+            <Button onClick={() => { setModal(null); setEditingReclamation(null); }}>Cancel</Button>
+            <Button variant="primary" icon={editingReclamation ? Save : Plus} onClick={submitReclamation}>{editingReclamation ? 'Save Changes' : 'Create Reclamation'}</Button>
           </>
         )}>
-          <form className="form-grid" onSubmit={submitReclamation}>
+          <form className="form-grid reclamation-form-grid" onSubmit={submitReclamation}>
             <Field label="Client" error={errors.client}>
-              <select value={form.client} onChange={event => setForm(current => ({ ...current, client: event.target.value }))}>
+              <select value={form.clientId} disabled={Boolean(editingReclamation)} onChange={event => {
+                const client = clients.find(item => String(item.id) === event.target.value);
+                setForm(current => ({ ...current, clientId: event.target.value, client: client?.name || '' }));
+              }}>
                 <option value="">Select client</option>
-                {clients.map(client => <option key={client.id} value={client.name}>{client.name}</option>)}
+                {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
               </select>
             </Field>
             <Field label="Product" error={errors.product}>
-              <input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} placeholder="Installation" />
+              <input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} placeholder="Product name" />
             </Field>
             <Field label="Model">
               <input value={form.model} onChange={event => setForm(current => ({ ...current, model: event.target.value }))} placeholder="REF-2004" />
@@ -454,25 +588,60 @@ export function ReclamationsPage({ user, notify }) {
             <Field label="Site">
               <input value={form.site} onChange={event => setForm(current => ({ ...current, site: event.target.value }))} placeholder="Installation site" />
             </Field>
-            <Field label="Description" error={errors.description}>
+            <Field label="Description (optional)">
               <textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} placeholder="Describe the issue" />
             </Field>
           </form>
         </Modal>
       )}
 
+      {modal === 'delete' && deleteTarget && (
+        <Modal title="Delete reclamation?" onClose={() => { setModal(null); setDeleteTarget(null); }} footer={(
+          <>
+            <Button onClick={() => { setModal(null); setDeleteTarget(null); }}>Cancel</Button>
+            <Button variant="primary" icon={Trash2} onClick={confirmDeleteReclamation}>Delete</Button>
+          </>
+        )}>
+          <div className="confirm-panel">
+            <AlertTriangle size={24} />
+            <div>
+              <strong>{deleteTarget.id}</strong>
+              <p>This action will remove the selected reclamation after backend verification.</p>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {modal === 'assign' && allowAssignTechnician && (
-        <Modal title="Assign Technician" onClose={() => setModal(null)}>
-          <div className="request-card-list">
+        <Modal title={selected?.technicianId ? 'Change Technician' : 'Assign Technician'} onClose={() => { setModal(null); setPendingTechnicianId(''); }} footer={(
+          <>
+            <Button onClick={() => { setModal(null); setPendingTechnicianId(''); }}>Cancel</Button>
+            <Button variant="primary" icon={CheckCircle} onClick={handleAssign} disabled={!pendingTechnicianId}>
+              {selected?.technicianId ? 'Confirm Change' : 'Confirm Assignment'}
+            </Button>
+          </>
+        )}>
+          <div className="assign-summary">
+            <ShieldCheck size={20} />
+            <div>
+              <strong>{selected?.id}</strong>
+              <p>{selected?.assigned ? `Current technician: ${selected.assigned}` : 'No technician assigned yet.'}</p>
+            </div>
+          </div>
+          <div className="request-card-list assign-technician-list">
             {technicians.map(technician => (
-              <button type="button" key={technician.id} className="planning-request-card" onClick={() => handleAssign(technician.id)}>
+              <button
+                type="button"
+                key={technician.id}
+                className={`planning-request-card ${String(pendingTechnicianId) === String(technician.id) ? 'active' : ''}`}
+                onClick={() => setPendingTechnicianId(String(technician.id))}
+              >
                 <div className="request-card-head">
                   <strong>{technician.name}</strong>
-                  <Badge tone="success">Backend</Badge>
-                  <UserPlus size={17} />
+                  {String(selected?.technicianId) === String(technician.id) ? <Badge tone="success">Current</Badge> : null}
                 </div>
-                <span className="request-line">{technician.role}</span>
-                <span className="request-line">{technician.email}</span>
+                <span className="request-line"><UserPlus size={16} />{technician.role}</span>
+                <span className="request-line"><Mail size={16} />{technician.email}</span>
               </button>
             ))}
           </div>
@@ -487,6 +656,16 @@ function InfoLine({ icon: Icon, label }) {
     <div className="info-line">
       <Icon size={19} />
       <strong>{label}</strong>
+    </div>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }) {
+  return (
+    <div className="info-tile">
+      <Icon size={16} />
+      <span>{label}</span>
+      <strong>{value || 'Not provided'}</strong>
     </div>
   );
 }

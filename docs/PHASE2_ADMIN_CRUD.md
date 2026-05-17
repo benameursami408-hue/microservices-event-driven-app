@@ -6,7 +6,7 @@ This phase focuses on the `POST /api/admin/users` and `PUT /api/admin/users/{id}
 
 ### Frontend
 
-- Added `front/src/utils/adminUserValidation.js` using Zod.
+- Added `SAV-Pro/src/utils/adminUserValidation.js` using Zod.
 - Validates required fields before sending the request.
 - Validates password minimum length before create/update.
 - Validates phone format before sending to the backend.

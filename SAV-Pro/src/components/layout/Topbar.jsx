@@ -7,14 +7,14 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  Plus,
   Settings,
+  UserCog,
   UserRound,
   Users,
   Wrench
 } from 'lucide-react';
 import { Avatar, Badge, IconButton, Logo } from '../ui';
-import { canAccessBackOfficeRoute, canCreateReclamation } from '../../utils/roleAccess';
+import { canAccessBackOfficeRoute } from '../../utils/roleAccess';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,15 +23,13 @@ const navItems = [
   { id: 'planning', label: 'Planning', icon: CalendarDays },
   { id: 'interventions', label: 'Interventions', icon: Wrench },
   { id: 'visit-reports', label: 'Reports', icon: FileText },
-  { id: 'notifications', label: 'Notifications', icon: Bell },
-  { id: 'users', label: 'Users', icon: Users }
+  { id: 'users', label: 'Users', icon: UserCog }
 ];
 
 export function Topbar({ activePage, user, counts = {}, onCreate, onNavigate, onLogout, unreadCount = 0 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const visibleNavItems = useMemo(() => navItems.filter(item => canAccessBackOfficeRoute(user, item.id)), [user]);
-  const showCreate = canCreateReclamation(user);
 
   function choose(action) {
     setUserMenuOpen(false);
@@ -77,13 +75,12 @@ export function Topbar({ activePage, user, counts = {}, onCreate, onNavigate, on
       </div>
 
       <div className="admin-navbar-tools">
-        {showCreate ? <IconButton icon={Plus} label="Create reclamation" className="primary square" onClick={onCreate} /> : null}
-        <IconButton icon={Bell} label="Notifications" className="bell-btn" badge={unreadCount || undefined} onClick={() => onNavigate('notifications')} />
         <IconButton
-          icon={Settings}
-          label="Settings"
-          className={`admin-settings-btn ${activePage === 'settings' ? 'active-tool' : ''}`}
-          onClick={() => onNavigate('settings')}
+          icon={Bell}
+          label="Notifications"
+          badge={unreadCount || undefined}
+          className={`admin-notification-btn ${activePage === 'notifications' ? 'active-tool' : ''}`}
+          onClick={() => onNavigate('notifications')}
         />
         <div className="topbar-user-wrap">
           <button type="button" className="topbar-user" onClick={() => setUserMenuOpen(current => !current)} aria-expanded={userMenuOpen}>

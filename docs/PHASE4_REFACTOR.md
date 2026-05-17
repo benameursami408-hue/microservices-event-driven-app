@@ -51,13 +51,13 @@ RealisationService.Helpers.cs
 Le fichier suivant etait trop long et difficile a maintenir:
 
 ```txt
-front/src/pages/ReclamationDetailPage.jsx
+SAV-Pro/src/pages/ReclamationDetailPage.jsx
 ```
 
 Les sections visuelles ont ete extraites dans:
 
 ```txt
-front/src/components/reclamations/ReclamationDetailSections.jsx
+SAV-Pro/src/components/reclamations/ReclamationDetailSections.jsx
 ```
 
 Nouveaux composants:

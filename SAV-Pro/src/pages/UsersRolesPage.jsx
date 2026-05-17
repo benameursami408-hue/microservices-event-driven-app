@@ -16,11 +16,14 @@ export function UsersRolesPage({ user, notify }) {
   const [form, setForm] = useState(emptyUser);
   const userResource = useUsers(role === 'All' ? undefined : role);
   const users = userResource.users;
-  const visibleUsers = useMemo(() => users.filter(item => `${item.name} ${item.email} ${item.role}`.toLowerCase().includes(query.toLowerCase())), [users, query]);
+  const visibleUsers = useMemo(
+    () => users.filter(item => `${item.name} ${item.email} ${item.role}`.toLowerCase().includes(query.toLowerCase())),
+    [users, query]
+  );
 
   function open(row = null) {
     if (!allowManageUsers) {
-      notify('Cette action est réservée à l’administrateur.', 'error');
+      notify("Cette action est reservee a l'administrateur.", 'error');
       return;
     }
     setForm(row || emptyUser);
@@ -42,7 +45,7 @@ export function UsersRolesPage({ user, notify }) {
 
   async function remove(row) {
     if (!allowManageUsers) {
-      notify('Cette action est réservée à l’administrateur.', 'error');
+      notify("Cette action est reservee a l'administrateur.", 'error');
       return;
     }
     try {
@@ -54,18 +57,121 @@ export function UsersRolesPage({ user, notify }) {
   }
 
   if (userResource.error) {
-    return <section className="page-shell"><Card title="Users & Roles" icon={ShieldCheck}><ApiErrorState status={userResource.errorStatus} message={userResource.error} onRetry={userResource.reload} /></Card></section>;
+    return (
+      <section className="page-shell">
+        <Card title="Users & Roles" icon={ShieldCheck}>
+          <ApiErrorState status={userResource.errorStatus} message={userResource.error} onRetry={userResource.reload} />
+        </Card>
+      </section>
+    );
   }
 
   return (
     <section className="page-shell">
-      <div className="page-title-row"><div><h1>Users & Roles</h1><p>Manage access, roles and account status through AuthService.</p></div>{allowManageUsers ? <Button variant="primary" icon={Plus} onClick={() => open()}>Add User</Button> : null}</div>
+      <div className="page-title-row">
+        <div>
+          <h1>Users & Roles</h1>
+          <p>Manage access, roles and account status through AuthService.</p>
+        </div>
+        {allowManageUsers ? (
+          <Button variant="primary" icon={Plus} onClick={() => open()}>
+            Add User
+          </Button>
+        ) : null}
+      </div>
+
       <Card title="Users" icon={ShieldCheck}>
-        {!allowManageUsers ? <p className="permission-note">Lecture seule : la création, modification et suppression des utilisateurs sont réservées à l’administrateur.</p> : null}
-        <div className="table-toolbar"><SearchInput value={query} onChange={setQuery} placeholder="Search users..." /><SelectFilter label="All Roles" value={role === 'All' ? '' : role} onChange={value => setRole(value || 'All')} options={['Admin', 'SAV', 'Technician', 'Client']} /></div>
-        <DataTable rows={visibleUsers} columns={[{ key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'role', label: 'Role', render: row => <Badge>{row.role}</Badge> }, { key: 'company', label: 'Company' }, { key: 'isActive', label: 'Status', render: row => <Badge>{row.isActive ? 'Active' : 'Closed'}</Badge> }, { key: 'actions', label: 'Actions', render: row => allowManageUsers ? <span className="avatar-cell"><Button size="sm" icon={Edit} onClick={() => open(row)}>Edit</Button><Button size="sm" icon={row.isActive ? ToggleRight : ToggleLeft} onClick={() => notify('Use Edit to change status when backend DTO supports it')}>{row.isActive ? 'Disable' : 'Enable'}</Button><Button size="sm" icon={Trash2} onClick={() => remove(row)}>Delete</Button></span> : <span className="permission-note compact">Lecture seule</span> }]} />
+        {!allowManageUsers ? (
+          <p className="permission-note">
+            Lecture seule : la creation, modification et suppression des utilisateurs sont reservees a l'administrateur.
+          </p>
+        ) : null}
+        <div className="table-toolbar">
+          <SearchInput value={query} onChange={setQuery} placeholder="Search users..." />
+          <SelectFilter
+            label="All Roles"
+            value={role === 'All' ? '' : role}
+            onChange={value => setRole(value || 'All')}
+            options={['Admin', 'SAV', 'Technician', 'Client']}
+          />
+        </div>
+        <DataTable
+          rows={visibleUsers}
+          columns={[
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'role', label: 'Role', render: row => <Badge>{row.role}</Badge> },
+            { key: 'company', label: 'Company' },
+            { key: 'isActive', label: 'Status', render: row => <Badge>{row.isActive ? 'Active' : 'Closed'}</Badge> },
+            {
+              key: 'actions',
+              label: 'Actions',
+              render: row =>
+                allowManageUsers ? (
+                  <span className="avatar-cell">
+                    <Button size="sm" icon={Edit} onClick={() => open(row)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      icon={row.isActive ? ToggleRight : ToggleLeft}
+                      onClick={() => notify('Use Edit to change status when backend DTO supports it')}
+                    >
+                      {row.isActive ? 'Disable' : 'Enable'}
+                    </Button>
+                    <Button size="sm" icon={Trash2} onClick={() => remove(row)}>
+                      Delete
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="permission-note compact">Lecture seule</span>
+                )
+            }
+          ]}
+        />
       </Card>
-      {modal && <Modal title={modal === 'edit' ? 'Edit User' : 'Add User'} onClose={() => setModal(null)} footer={<Button variant="primary" icon={Plus} onClick={submit}>Save User</Button>}><form className="form-grid" onSubmit={submit}><Field label="Name"><input value={form.name || ''} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} /></Field><Field label="Email"><input value={form.email || ''} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} /></Field><Field label="Role"><select value={form.role || ''} onChange={event => setForm(current => ({ ...current, role: event.target.value }))}><option value="">Select role</option><option>Admin</option><option>SAV</option><option>Technician</option><option>Client</option></select></Field>{modal === 'new' && <Field label="Temporary Password"><input value={form.password || ''} onChange={event => setForm(current => ({ ...current, password: event.target.value }))} placeholder="ChangeMe123!" /></Field>}<Field label="Company"><input value={form.company || ''} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} /></Field></form></Modal>}
+
+      {modal && (
+        <Modal
+          title={modal === 'edit' ? 'Edit User' : 'Add User'}
+          onClose={() => setModal(null)}
+          footer={
+            <Button variant="primary" icon={Plus} onClick={submit}>
+              Save User
+            </Button>
+          }
+        >
+          <form className="form-grid" onSubmit={submit}>
+            <Field label="Name">
+              <input value={form.name || ''} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} />
+            </Field>
+            <Field label="Email">
+              <input value={form.email || ''} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} />
+            </Field>
+            <Field label="Role">
+              <select value={form.role || ''} onChange={event => setForm(current => ({ ...current, role: event.target.value }))}>
+                <option value="">Select role</option>
+                <option>Admin</option>
+                <option>SAV</option>
+                <option>Technician</option>
+                <option>Client</option>
+              </select>
+            </Field>
+            {modal === 'new' && (
+              <Field label="Temporary Password">
+                <input
+                  value={form.password || ''}
+                  onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
+                  placeholder="ChangeMe123!"
+                />
+              </Field>
+            )}
+            <Field label="Company">
+              <input value={form.company || ''} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} />
+            </Field>
+          </form>
+        </Modal>
+      )}
     </section>
   );
 }

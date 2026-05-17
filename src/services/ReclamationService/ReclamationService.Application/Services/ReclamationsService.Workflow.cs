@@ -140,9 +140,9 @@ public partial class ReclamationsService
         var reclamation = GetByIdInternal(id);
         var role = NormalizeRole(actor.Role);
 
-        if (reclamation.Status != ReclamationStatus.Assigned)
+        if (reclamation.Status is not (ReclamationStatus.Assigned or ReclamationStatus.Planned))
         {
-            throw new BadRequestException("Only ASSIGNED reclamations can be planned.");
+            throw new BadRequestException("Only ASSIGNED or PLANNED reclamations can be planned.");
         }
 
         if (role == "SAV" && reclamation.SAVId != actor.UserId)

@@ -75,7 +75,7 @@ public class PlanningCapacityServiceTests
         public Task<Appointment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(_appointments.FirstOrDefault(x => x.Id == id));
 
-        public Task<List<Appointment>> QueryAsync(long? reclamationId = null, long? technicianId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
+        public Task<List<Appointment>> QueryAsync(long? reclamationId = null, long? technicianId = null, long? clientId = null, DateTime? from = null, DateTime? to = null, CancellationToken cancellationToken = default)
             => Task.FromResult(_appointments.ToList());
 
         public Task<List<Appointment>> GetTechnicianActiveAppointmentsAsync(long technicianId, DateTime from, DateTime to, Guid? excludeAppointmentId = null, CancellationToken cancellationToken = default)

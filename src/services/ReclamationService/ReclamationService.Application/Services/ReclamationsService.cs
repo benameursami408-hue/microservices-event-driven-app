@@ -41,11 +41,26 @@ public partial class ReclamationsService
 
     public async Task<ReclamationDto> CreateAsync(CreateReclamationDto dto, CurrentUser actor)
     {
-        EnsureRole(actor, "CLIENT", "ADMIN");
+        EnsureRole(actor, "CLIENT", "SAV", "ADMIN");
 
+        var role = NormalizeRole(actor.Role);
+        var clientId = actor.UserId;
         var clientName = string.IsNullOrWhiteSpace(actor.FullName) ? (actor.Email ?? string.Empty) : actor.FullName;
 
-        var reclamation = dto.ToEntity(actor.UserId, clientName);
+        if (role is "SAV" or "ADMIN")
+        {
+            if (!dto.ClientId.HasValue || dto.ClientId.Value <= 0)
+            {
+                throw new BadRequestException("Client is required.");
+            }
+
+            var selectedClient = _clientRepository.GetById(dto.ClientId.Value)
+                ?? throw new BadRequestException("Selected client was not found.");
+            clientId = selectedClient.Id;
+            clientName = selectedClient.FullName;
+        }
+
+        var reclamation = dto.ToEntity(clientId, clientName);
         var initialSnapshot = CaptureOperationalState(reclamation);
         ApplyDerivedState(reclamation);
         var created = _reclamationRepository.Create(reclamation);

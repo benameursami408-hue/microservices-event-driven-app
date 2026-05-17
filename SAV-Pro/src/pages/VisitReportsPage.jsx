@@ -17,11 +17,29 @@ export function VisitReportsPage({ notify, clientMode = false, user }) {
     .filter(item => `${item.id} ${item.client} ${item.technicianName} ${item.summary}`.toLowerCase().includes(query.toLowerCase())), [reportResource.reports, filter, query]);
   const selected = reports.find(item => item.id === selectedId);
 
-  async function handlePublish(reportId) { try { await reportResource.publish(reportId); notify('Report published in backend'); } catch (err) { notify(getFriendlyApiError(err), 'error'); } }
+  async function handlePublish(reportId) {
+    try {
+      await reportResource.publish(reportId);
+      notify('Report published in backend');
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    }
+  }
 
   return (
-    <section className="page-shell">
-      <div className="page-title-row"><div><h1>Visit Reports</h1><p>{clientMode || technicianMode ? 'Rapports liés à vos interventions.' : 'Draft and published intervention reports.'}</p></div></div>
+    <section className="page-shell visit-reports-page">
+      <div className="page-title-row visit-reports-title-row">
+        <div>
+          <span className="eyebrow">Intervention records</span>
+          <h1>Visit Reports</h1>
+          <p>{clientMode || technicianMode ? 'Reports linked to your interventions.' : 'Draft and published intervention reports.'}</p>
+        </div>
+        <div className="page-title-kpis">
+          <span><strong>{reports.length}</strong><small>Reports</small></span>
+          <span><strong>{reports.filter(item => item.status === 'Draft').length}</strong><small>Draft</small></span>
+        </div>
+      </div>
+
       <Card title="Visit Reports" icon={FileText}>
         {reportResource.error ? <ApiErrorState status={reportResource.errorStatus} message={reportResource.error} onRetry={reportResource.reload} /> : null}
         <div className="table-toolbar"><SearchInput value={query} onChange={setQuery} placeholder="Search reports..." /><Button variant={filter === 'All' ? 'primary' : 'secondary'} onClick={() => setFilter('All')}>All</Button><Button variant={filter === 'Draft' ? 'primary' : 'secondary'} onClick={() => setFilter('Draft')}>Draft</Button><Button variant={filter === 'Published' ? 'primary' : 'secondary'} onClick={() => setFilter('Published')}>Published</Button></div>

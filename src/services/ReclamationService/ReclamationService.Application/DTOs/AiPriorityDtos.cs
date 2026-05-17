@@ -38,6 +38,9 @@ public class AiPriorityAnalysisDto
 
 public class ApplyAiPriorityDto
 {
+    [Range(1, long.MaxValue)]
+    public long? AnalysisId { get; set; }
+
     [MaxLength(500)]
     public string? Reason { get; set; }
 }

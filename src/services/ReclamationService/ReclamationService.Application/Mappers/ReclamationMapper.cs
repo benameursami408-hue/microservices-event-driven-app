@@ -83,7 +83,7 @@ public static class ReclamationMapper
         return new Reclamation
         {
             Reference = GenerateReference(),
-            Description = dto.Description,
+            Description = string.IsNullOrWhiteSpace(dto.Description) ? "No description provided." : dto.Description.Trim(),
             Priority = dto.Priority,
             Severity = dto.Priority,
             Status = ReclamationService.Domain.Enums.ReclamationStatus.Open,
@@ -109,7 +109,7 @@ public static class ReclamationMapper
 
     public static void ApplyUpdate(this Reclamation reclamation, UpdateReclamationDto dto)
     {
-        reclamation.Description = dto.Description;
+        reclamation.Description = string.IsNullOrWhiteSpace(dto.Description) ? "No description provided." : dto.Description.Trim();
         reclamation.Severity = dto.Priority;
         reclamation.IsBlocking = dto.IsBlocking;
         reclamation.FollowUpCount = dto.FollowUpCount;

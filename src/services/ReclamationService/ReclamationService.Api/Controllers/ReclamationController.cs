@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReclamationService.Application.DTOs;
+using ReclamationService.Application.Security;
 using ReclamationService.Application.Services;
 using ReclamationService.Api.Infrastructure;
 using ReclamationService.Domain.Enums;
@@ -41,6 +42,20 @@ public class ReclamationsController : ControllerBase
     {
         var actor = User.ToCurrentUser(HttpContext);
         return Ok(_reclamationService.QueryVisible(actor, status, category, priority, search, page, pageSize));
+    }
+
+    [HttpPost("query")]
+    public ActionResult<PagedResult<ReclamationDto>> QueryByBody([FromBody] ReclamationQueryRequestDto request)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(_reclamationService.QueryVisible(
+            actor,
+            request.Status,
+            request.Category,
+            request.Priority,
+            request.Search,
+            request.Page,
+            request.PageSize));
     }
 
     [HttpGet("{id}")]
@@ -132,6 +147,34 @@ public class ReclamationsController : ControllerBase
     public async Task<ActionResult<object>> ApplyAiPriorityAnalysis(long id, long analysisId, [FromBody] ApplyAiPriorityDto dto, CancellationToken cancellationToken)
     {
         var actor = User.ToCurrentUser(HttpContext);
+        return await ApplyAiPriorityAnalysisInternalAsync(id, analysisId, dto, actor, cancellationToken);
+    }
+
+    [HttpPost("{id}/ai-priority/apply")]
+    public async Task<ActionResult<object>> ApplyAiPrioritySuggestion(long id, [FromBody] ApplyAiPriorityDto dto, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        AiPriorityAnalysisDto? analysis;
+
+        if (dto.AnalysisId.HasValue)
+        {
+            analysis = await _aiPriorityService.GetByIdAsync(dto.AnalysisId.Value, cancellationToken);
+        }
+        else
+        {
+            analysis = await _aiPriorityService.GetLatestAsync(id, cancellationToken);
+        }
+
+        if (analysis is null || analysis.ReclamationId != id || analysis.AnalysisId is null)
+        {
+            return NotFound();
+        }
+
+        return await ApplyAiPriorityAnalysisInternalAsync(id, analysis.AnalysisId.Value, dto, actor, cancellationToken);
+    }
+
+    private async Task<ActionResult<object>> ApplyAiPriorityAnalysisInternalAsync(long id, long analysisId, ApplyAiPriorityDto dto, CurrentUser actor, CancellationToken cancellationToken)
+    {
         var analysis = await _aiPriorityService.GetByIdAsync(analysisId, cancellationToken);
         if (analysis is null || analysis.ReclamationId != id) return NotFound();
 

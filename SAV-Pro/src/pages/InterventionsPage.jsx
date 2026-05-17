@@ -314,9 +314,9 @@ export function InterventionsPage({ user, notify, navigate }) {
 
 function InterventionsHeader({ technicianMode }) {
   return (
-    <div className="interventions-hero">
-      <span className="interventions-hero-icon"><Wrench size={28} /></span>
+    <div className="page-title-row interventions-title-row">
       <div>
+        <span className="eyebrow">{technicianMode ? 'Technician workspace' : 'Field operations'}</span>
         <h1>{technicianMode ? 'Mes interventions' : 'Interventions'}</h1>
         <p>{technicianMode ? 'Consultez et suivez les interventions qui vous sont assignées.' : 'Suivez les interventions planifiées et leur avancement terrain.'}</p>
       </div>
