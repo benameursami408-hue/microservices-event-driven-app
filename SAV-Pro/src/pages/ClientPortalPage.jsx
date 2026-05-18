@@ -17,7 +17,8 @@ import { usePlanning } from '../hooks/usePlanning';
 import { useReclamations } from '../hooks/useReclamations';
 import { getFriendlyApiError } from '../utils/errorMessages';
 
-const emptyForm = { product: '', model: '', serial: '', priority: 'Medium', description: '', site: '' };
+const CLIENT_REQUEST_FORM_ID = 'client-service-request-form';
+const emptyForm = { product: '', model: '', serial: '', description: '', site: '' };
 const workflowSteps = ['Open', 'Assigned', 'Planned', 'In Progress', 'Resolved', 'Closed'];
 
 function statusIndex(status) {
@@ -209,28 +210,30 @@ export function ClientPortalPage({ user, notify, navigate, mode = 'home' }) {
       {modal === 'new' && (
         <Modal
           title="New Service Request"
+          className="client-request-modal"
           onClose={() => setModal(null)}
           footer={(
             <>
-              <Button onClick={() => setModal(null)}>Cancel</Button>
-              <Button variant="primary" icon={Plus} onClick={submitRequest}>Submit Request</Button>
+              <Button type="button" onClick={() => setModal(null)}>Cancel</Button>
+              <Button type="submit" form={CLIENT_REQUEST_FORM_ID} variant="primary" icon={Plus}>Submit Request</Button>
             </>
           )}
         >
-          <form className="form-grid" onSubmit={submitRequest}>
-            <Field label="Product"><input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} /></Field>
-            <Field label="Model"><input value={form.model} onChange={event => setForm(current => ({ ...current, model: event.target.value }))} /></Field>
-            <Field label="Serial"><input value={form.serial} onChange={event => setForm(current => ({ ...current, serial: event.target.value }))} /></Field>
-            <Field label="Priority">
-              <select value={form.priority} onChange={event => setForm(current => ({ ...current, priority: event.target.value }))}>
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-                <option>Urgent</option>
-              </select>
-            </Field>
-            <Field label="Site"><input value={form.site} onChange={event => setForm(current => ({ ...current, site: event.target.value }))} /></Field>
-            <Field label="Description"><textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} /></Field>
+          <form id={CLIENT_REQUEST_FORM_ID} className="client-request-form" onSubmit={submitRequest}>
+            <div className="client-request-band">
+              <span><Wrench size={21} /></span>
+              <div>
+                <strong>{clientName}</strong>
+                <small>Service request</small>
+              </div>
+            </div>
+            <div className="client-request-field-grid">
+              <Field label="Product"><input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} placeholder="Product name" /></Field>
+              <Field label="Model"><input value={form.model} onChange={event => setForm(current => ({ ...current, model: event.target.value }))} placeholder="Model number" /></Field>
+              <Field label="Serial"><input value={form.serial} onChange={event => setForm(current => ({ ...current, serial: event.target.value }))} placeholder="Serial number" /></Field>
+              <Field label="Site"><input value={form.site} onChange={event => setForm(current => ({ ...current, site: event.target.value }))} placeholder="Service site" /></Field>
+              <Field label="Description" className="full"><textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} placeholder="Describe the issue" /></Field>
+            </div>
           </form>
         </Modal>
       )}

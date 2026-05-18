@@ -362,7 +362,7 @@ function Meta({ icon: Icon, label, value }) {
 
 function InterventionDetailsModal({ intervention, technicianMode, onClose, onStart, onComplete, canStart, canComplete }) {
   return (
-    <Modal title={`Détail intervention ${intervention.reference}`} onClose={onClose} footer={(
+    <Modal className="intervention-details-card" title="Détail intervention" onClose={onClose} footer={(
       <>
         {technicianMode && canStart ? <Button icon={Play} onClick={onStart}>Démarrer intervention</Button> : null}
         {technicianMode && canComplete ? <Button variant="primary" icon={FileText} onClick={onComplete}>Marquer terminée / créer rapport</Button> : null}
@@ -370,20 +370,27 @@ function InterventionDetailsModal({ intervention, technicianMode, onClose, onSta
       </>
     )}>
       <div className="intervention-details-modal">
-        <div className="intervention-reference-row">
-          <Badge tone={getInterventionStatusTone(intervention.status, intervention)}>{intervention.status}</Badge>
-          {intervention.isLate ? <Badge tone="danger">En retard</Badge> : null}
-          <Badge>{intervention.priority}</Badge>
+        <div className="intervention-detail-hero">
+          <span className="intervention-detail-mark"><Wrench size={24} /></span>
+          <div className="intervention-detail-heading">
+            <div className="intervention-reference-row">
+              <Badge tone={getInterventionStatusTone(intervention.status, intervention)}>{intervention.status}</Badge>
+              {intervention.isLate ? <Badge tone="danger">En retard</Badge> : null}
+              <Badge>{intervention.priority}</Badge>
+            </div>
+            <h3>{intervention.reference}</h3>
+            <p>{intervention.equipment || intervention.product || 'Équipement non renseigné'}</p>
+          </div>
         </div>
         <div className="intervention-detail-grid">
-          <Info label="Référence intervention" value={intervention.reference} />
-          <Info label="Réclamation liée" value={intervention.reclamation || intervention.reclamationId || '-'} />
-          <Info label="Client" value={intervention.client || '-'} />
-          <Info label="Équipement / produit" value={intervention.equipment || '-'} />
-          <Info label="Technicien" value={intervention.technician || '-'} />
-          <Info label="Date prévue" value={intervention.scheduledLabel || '-'} />
-          <Info label="Adresse" value={intervention.address || '-'} />
-          <Info label="Appointment ID" value={intervention.appointmentId || '-'} />
+          <Info icon={ClipboardList} label="Référence intervention" value={intervention.reference} />
+          <Info icon={FileText} label="Réclamation liée" value={intervention.reclamation || intervention.reclamationId || '-'} />
+          <Info icon={UserRound} label="Client" value={intervention.client || '-'} />
+          <Info icon={Wrench} label="Équipement / produit" value={intervention.equipment || '-'} />
+          <Info icon={UserRound} label="Technicien" value={intervention.technician || '-'} />
+          <Info icon={CalendarDays} label="Date prévue" value={intervention.scheduledLabel || '-'} />
+          <Info icon={MapPin} label="Adresse" value={intervention.address || '-'} />
+          <Info icon={Clock} label="Appointment ID" value={intervention.appointmentId || '-'} />
         </div>
         <div className="intervention-note-card">
           <strong>Description / notes technicien</strong>
@@ -406,8 +413,14 @@ function InterventionDetailsModal({ intervention, technicianMode, onClose, onSta
   );
 }
 
-function Info({ label, value }) {
-  return <div className="intervention-info-pair"><span>{label}</span><strong>{value}</strong></div>;
+function Info({ icon: Icon, label, value }) {
+  return (
+    <div className="intervention-info-pair">
+      {Icon ? <span className="intervention-info-icon"><Icon size={17} /></span> : null}
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
+  );
 }
 
 function errorTitle(status) {

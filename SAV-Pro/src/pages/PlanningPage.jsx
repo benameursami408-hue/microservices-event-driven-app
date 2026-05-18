@@ -6,6 +6,7 @@ import {
   Clock,
   ListChecks,
   Loader2,
+  Mail,
   MapPin,
   Phone,
   Plus,
@@ -152,22 +153,7 @@ export function PlanningPage({ notify }) {
     <>
       {modal === 'appointment' && <AppointmentModal title="New Appointment" planningRequests={planningRequests} technicians={technicians} form={form} setForm={setForm} errors={errors} onClose={() => setModal(null)} onSubmit={submitAppointment} />}
       {modal === 'reschedule' && <AppointmentModal title="Reschedule Appointment" planningRequests={planningRequests} technicians={technicians} form={form} setForm={setForm} errors={errors} onClose={() => setModal(null)} onSubmit={submitReschedule} hideRequest />}
-      {modal === 'assign' && (
-        <Modal title="Assign Technician" onClose={() => setModal(null)}>
-          <div className="request-card-list">
-            {technicians.map((technician, index) => (
-              <button type="button" key={technician.id} className="planning-request-card" onClick={() => assignTechnician(technician.id)}>
-                <div className="request-card-head">
-                  <strong>{technician.name}</strong>
-                  <Avatar name={technician.name} size="sm" className={`avatar-${getTechnicianTone(technician.id, technicians, index)}`} />
-                </div>
-                <RequestLine icon={Wrench}>{technician.role}</RequestLine>
-                <RequestLine icon={Phone}>{technician.email}</RequestLine>
-              </button>
-            ))}
-          </div>
-        </Modal>
-      )}
+      {modal === 'assign' && selectedAppointment && <AssignTechnicianModal appointment={selectedAppointment} technicians={technicians} onAssign={assignTechnician} onClose={() => setModal(null)} />}
     </>
   );
 
@@ -268,6 +254,46 @@ function TechnicianAvailability({ technicians, allTechnicians = technicians, com
         })}
       </div>
     </section>
+  );
+}
+
+function AssignTechnicianModal({ appointment, technicians, onAssign, onClose }) {
+  return (
+    <Modal className="assign-technician-modal" title="Assign Technician" onClose={onClose} footer={<Button onClick={onClose}>Cancel</Button>}>
+      <div className="assign-technician-panel">
+        <div className="assign-technician-summary">
+          <span className="assign-technician-summary-icon"><UserPlus size={22} /></span>
+          <div>
+            <span className="modal-summary-eyebrow">Appointment</span>
+            <strong>{appointment.client || appointment.id}</strong>
+            <p>{appointment.product || 'No product recorded'}</p>
+          </div>
+          <div className="assign-technician-summary-meta">
+            <span><CalendarDays size={15} />{appointment.date || '-'}</span>
+            <span><Clock size={15} />{appointment.start || '--:--'} - {appointment.end || '--:--'}</span>
+            <span><MapPin size={15} />{appointment.location || 'No location'}</span>
+          </div>
+        </div>
+
+        <div className="assign-technician-list">
+          {technicians.length ? technicians.map((technician, index) => {
+            const tone = getTechnicianTone(technician.id, technicians, index);
+            const assigned = String(appointment.technicianId) === String(technician.id) || appointment.technicianName === technician.name;
+            return (
+              <button type="button" key={technician.id} className={`assign-technician-card tech-tone-${tone} ${assigned ? 'active' : ''}`} onClick={() => onAssign(technician.id)}>
+                <Avatar name={technician.name} size="lg" className={`avatar-${tone}`} />
+                <div>
+                  <strong>{technician.name}</strong>
+                  <span>{technician.role || 'Technician'}</span>
+                  <small><Mail size={14} />{technician.email || 'No email'}</small>
+                </div>
+                <em>{assigned ? 'Assigned' : availabilityLabel(index)}</em>
+              </button>
+            );
+          }) : <div className="empty-panel compact">No technicians available.</div>}
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -378,7 +404,107 @@ function AgendaItem({ appointment, technicians, onSelect }) {
 }
 
 function AppointmentModal({ title, planningRequests, technicians, form, setForm, errors, onClose, onSubmit, hideRequest = false }) {
-  return <Modal title={title} onClose={onClose} footer={<><Button onClick={onClose}>Cancel</Button><Button variant="primary" icon={CalendarDays} onClick={onSubmit}>Save Appointment</Button></>}><form className="form-grid" onSubmit={onSubmit}>{!hideRequest && <Field label="Planning Request" error={errors.requestId}><select value={form.requestId || ''} onChange={event => setForm(current => ({ ...current, requestId: event.target.value }))}><option value="">Select request</option>{planningRequests.map(request => <option key={request.id} value={request.id}>{request.id} - {request.client}</option>)}</select></Field>}<Field label="Technician" error={errors.technicianId}><select value={form.technicianId || ''} onChange={event => setForm(current => ({ ...current, technicianId: event.target.value }))}><option value="">Select technician</option>{technicians.map(technician => <option key={technician.id} value={technician.id}>{technician.name}</option>)}</select></Field><Field label="Date" error={errors.date}><input type="date" value={form.date || ''} onChange={event => setForm(current => ({ ...current, date: event.target.value }))} /></Field><Field label="Start" error={errors.start}><input type="time" value={form.start || ''} onChange={event => setForm(current => ({ ...current, start: event.target.value }))} /></Field><Field label="End" error={errors.end}><input type="time" value={form.end || ''} onChange={event => setForm(current => ({ ...current, end: event.target.value }))} /></Field><Field label="Status"><select value={form.status || 'Proposed'} onChange={event => setForm(current => ({ ...current, status: event.target.value }))}><option>Proposed</option><option>Confirmed</option><option>Rescheduled</option><option>Completed</option></select></Field><Field label="Planning Note"><textarea value={form.note || ''} onChange={event => setForm(current => ({ ...current, note: event.target.value }))} /></Field></form></Modal>;
+  const selectedRequest = planningRequests.find(request => request.id === form.requestId);
+  const selectedTechnician = technicians.find(technician => String(technician.id) === String(form.technicianId));
+  const timeRange = `${form.start || '--:--'} - ${form.end || '--:--'}`;
+
+  return (
+    <Modal className="form-modal-card" title={title} onClose={onClose} footer={(
+      <>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="primary" icon={CalendarDays} onClick={onSubmit}>Save Appointment</Button>
+      </>
+    )}>
+      <div className="structured-modal appointment-entry-modal">
+        <div className="modal-summary-strip">
+          <div className="modal-summary-main">
+            <span className="modal-summary-icon"><CalendarDays size={22} /></span>
+            <div>
+              <span className="modal-summary-eyebrow">{form.status || 'Proposed'}</span>
+              <strong>{form.date || 'Date not set'}</strong>
+              <p>{timeRange}</p>
+            </div>
+          </div>
+          <div className="modal-summary-metrics">
+            {!hideRequest && <span><ListChecks size={15} /><small>Request</small><strong>{selectedRequest?.id || 'Not selected'}</strong></span>}
+            <span><Wrench size={15} /><small>Technician</small><strong>{selectedTechnician?.name || 'Unassigned'}</strong></span>
+          </div>
+        </div>
+
+        <form className="structured-form appointment-form-grid" onSubmit={onSubmit}>
+          {!hideRequest && (
+            <section className="form-section form-section-wide">
+              <div className="form-section-heading">
+                <span><ListChecks size={16} /></span>
+                <h3>Planning request</h3>
+              </div>
+              <div className="structured-field-grid">
+                <Field label="Planning Request" error={errors.requestId} className="full">
+                  <select value={form.requestId || ''} onChange={event => setForm(current => ({ ...current, requestId: event.target.value }))}>
+                    <option value="">Select request</option>
+                    {planningRequests.map(request => <option key={request.id} value={request.id}>{request.id} - {request.client}</option>)}
+                  </select>
+                </Field>
+              </div>
+            </section>
+          )}
+
+          <section className="form-section">
+            <div className="form-section-heading">
+              <span><UserPlus size={16} /></span>
+              <h3>Assignment</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Technician" error={errors.technicianId} className="full">
+                <select value={form.technicianId || ''} onChange={event => setForm(current => ({ ...current, technicianId: event.target.value }))}>
+                  <option value="">Select technician</option>
+                  {technicians.map(technician => <option key={technician.id} value={technician.id}>{technician.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Status" className="full">
+                <select value={form.status || 'Proposed'} onChange={event => setForm(current => ({ ...current, status: event.target.value }))}>
+                  <option>Proposed</option>
+                  <option>Confirmed</option>
+                  <option>Rescheduled</option>
+                  <option>Completed</option>
+                </select>
+              </Field>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <div className="form-section-heading">
+              <span><Clock size={16} /></span>
+              <h3>Schedule</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Date" error={errors.date} className="full">
+                <input type="date" value={form.date || ''} onChange={event => setForm(current => ({ ...current, date: event.target.value }))} />
+              </Field>
+              <Field label="Start" error={errors.start}>
+                <input type="time" value={form.start || ''} onChange={event => setForm(current => ({ ...current, start: event.target.value }))} />
+              </Field>
+              <Field label="End" error={errors.end}>
+                <input type="time" value={form.end || ''} onChange={event => setForm(current => ({ ...current, end: event.target.value }))} />
+              </Field>
+            </div>
+          </section>
+
+          <section className="form-section form-section-wide">
+            <div className="form-section-heading">
+              <span><CalendarDays size={16} /></span>
+              <h3>Planning note</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Planning Note" className="full">
+                <textarea value={form.note || ''} onChange={event => setForm(current => ({ ...current, note: event.target.value }))} />
+              </Field>
+            </div>
+          </section>
+        </form>
+      </div>
+    </Modal>
+  );
 }
 
 function RequestLine({ icon: Icon, children }) { return <span className="request-line"><Icon size={15} />{children}</span>; }

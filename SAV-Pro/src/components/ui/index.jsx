@@ -17,6 +17,7 @@ import {
   Search,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   User,
   UserCog,
   UserRound,
@@ -294,10 +295,10 @@ export function NotificationItem({ item, compact = false }) {
   );
 }
 
-export function Modal({ title, children, footer, onClose }) {
+export function Modal({ title, children, footer, onClose, className = '' }) {
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="modal-card" role="dialog" aria-modal="true" aria-label={title}>
+      <section className={`modal-card ${className}`.trim()} role="dialog" aria-modal="true" aria-label={title}>
         <header className="modal-header">
           <h2>{title}</h2>
           <IconButton icon={XCircle} label="Close modal" className="ghost" onClick={onClose} />
@@ -309,9 +310,37 @@ export function Modal({ title, children, footer, onClose }) {
   );
 }
 
-export function Field({ label, error, children }) {
+export function DeleteConfirmModal({
+  title = 'Confirm deletion',
+  subject,
+  description = 'This action cannot be undone.',
+  onClose,
+  onConfirm
+}) {
   return (
-    <label className="form-field">
+    <Modal className="delete-confirm-modal" title={title} onClose={onClose} footer={(
+      <>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="primary" icon={Trash2} onClick={onConfirm}>Delete</Button>
+      </>
+    )}>
+      <div className="delete-confirm-panel">
+        <div className="delete-confirm-hero">
+          <span><AlertTriangle size={24} /></span>
+          <div>
+            <small>Delete confirmation</small>
+            <strong>{subject}</strong>
+            <p>{description}</p>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+export function Field({ label, error, children, className = '' }) {
+  return (
+    <label className={`form-field ${className}`.trim()}>
       <span>{label}</span>
       {children}
       {error && <small>{error}</small>}

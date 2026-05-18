@@ -1,4 +1,4 @@
-import { LogOut, Mail, Save, ShieldCheck, UserRound } from 'lucide-react';
+import { Building2, BriefcaseBusiness, IdCard, LogOut, Mail, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Avatar, Badge, Button, Card, Field } from '../components/ui';
 
@@ -13,6 +13,7 @@ export function ProfilePage({ user, notify, onLogout }) {
   }
 
   const storedUser = { ...user, ...form };
+  const statusLabel = storedUser.isActive === false ? 'Inactive' : 'Active';
 
   return (
     <section className="page-shell profile-page">
@@ -22,40 +23,86 @@ export function ProfilePage({ user, notify, onLogout }) {
           <h1>Profile</h1>
           <p>Manage your account, role and contact information.</p>
         </div>
-        <Button icon={LogOut} onClick={onLogout}>Logout</Button>
       </div>
 
+      <section className="profile-hero-card card">
+        <div className="profile-hero-main">
+          <Avatar name={storedUser.name} initials={storedUser.avatar} size="xl" />
+          <div>
+            <span className="eyebrow">Signed in as</span>
+            <h2>{storedUser.name || 'SAV Pro user'}</h2>
+            <p>{storedUser.title || 'After-sales service workspace user'}</p>
+          </div>
+        </div>
+        <div className="profile-hero-badges">
+          <Badge>{storedUser.role || 'User'}</Badge>
+          <Badge tone={statusLabel === 'Active' ? 'success' : 'closed'}>{statusLabel}</Badge>
+        </div>
+        <div className="profile-hero-actions">
+          <Button variant="primary" icon={UserRound} onClick={() => setEditing(true)}>Edit Profile</Button>
+          <Button icon={LogOut} onClick={onLogout}>Logout</Button>
+        </div>
+      </section>
+
       <div className="profile-page-grid">
-        <Card title="Profile" icon={UserRound} className="profile-summary-card">
-          <div className="profile-summary">
-            <Avatar name={storedUser.name} initials={storedUser.avatar} size="xl" />
+        <Card title="Account Snapshot" icon={UserRound} className="profile-summary-card">
+          <div className="profile-snapshot-hero">
+            <span className="profile-snapshot-icon"><IdCard size={22} /></span>
             <div>
-              <h2>{storedUser.name}</h2>
-              <Badge>{storedUser.role}</Badge>
-              <p>{storedUser.title || 'SAV Pro user'}</p>
+              <small>Account owner</small>
+              <strong>{storedUser.name || 'User profile'}</strong>
+              <p>{storedUser.title || 'SAV Pro workspace access'}</p>
             </div>
           </div>
-          <div className="profile-identity-strip">
-            <span><Mail size={16} />{storedUser.email || '-'}</span>
-            <span><ShieldCheck size={16} />{storedUser.isActive === false ? 'Inactive' : 'Active'}</span>
+
+          <div className="profile-snapshot-grid">
+            <SnapshotItem icon={Mail} label="Email" value={storedUser.email || '-'} />
+            <SnapshotItem icon={BriefcaseBusiness} label="Role" value={storedUser.role || '-'} tone="purple" />
+            <SnapshotItem icon={Building2} label="Company" value={storedUser.company || 'Not set'} tone="teal" />
+            <SnapshotItem icon={ShieldCheck} label="Status" value={statusLabel} tone={statusLabel === 'Active' ? 'green' : 'gray'} />
           </div>
-          <div className="side-info-list">
-            <Info label="Email" value={storedUser.email} />
-            <Info label="Company" value={storedUser.company} />
-            <Info label="Status" value={storedUser.isActive === false ? 'Inactive' : 'Active'} />
-          </div>
-          <div className="profile-actions"><Button variant="primary" icon={UserRound} onClick={() => setEditing(true)}>Edit Profile</Button></div>
         </Card>
 
-        <Card title={editing ? 'Edit Profile' : 'Account Details'} icon={UserRound} className="profile-form-card">
+        <Card title={editing ? 'Edit Profile' : 'Account Details'} icon={editing ? Save : UserRound} className="profile-form-card">
           {editing ? (
-            <form className="form-grid profile-edit-form" onSubmit={submit}>
-              <Field label="Name"><input value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} /></Field>
-              <Field label="Email"><input type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} /></Field>
-              <Field label="Title"><input value={form.title} onChange={event => setForm(current => ({ ...current, title: event.target.value }))} /></Field>
-              <Field label="Company"><input value={form.company} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} /></Field>
-              <Field label="Role"><input value={form.role} disabled /></Field>
-              <div className="form-actions full"><Button type="button" onClick={() => setEditing(false)}>Cancel</Button><Button type="submit" variant="primary" icon={Save}>Save Profile</Button></div>
+            <form className="profile-edit-form" onSubmit={submit}>
+              <div className="profile-edit-summary">
+                <span><ShieldCheck size={20} /></span>
+                <div>
+                  <strong>Profile changes</strong>
+                  <p>Name, email, title and company are editable here. Role stays controlled by admin permissions.</p>
+                </div>
+              </div>
+
+              <div className="profile-edit-sections">
+                <section className="form-section">
+                  <div className="form-section-heading">
+                    <span><UserRound size={16} /></span>
+                    <h3>Identity</h3>
+                  </div>
+                  <div className="structured-field-grid">
+                    <Field label="Name" className="full"><input value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} /></Field>
+                    <Field label="Email" className="full"><input type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} /></Field>
+                  </div>
+                </section>
+
+                <section className="form-section">
+                  <div className="form-section-heading">
+                    <span><BriefcaseBusiness size={16} /></span>
+                    <h3>Organization & access</h3>
+                  </div>
+                  <div className="structured-field-grid">
+                    <Field label="Title"><input value={form.title} onChange={event => setForm(current => ({ ...current, title: event.target.value }))} /></Field>
+                    <Field label="Company"><input value={form.company} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} /></Field>
+                    <Field label="Role" className="full"><input value={form.role} disabled /></Field>
+                  </div>
+                </section>
+              </div>
+
+              <div className="profile-form-footer">
+                <Button type="button" onClick={() => setEditing(false)}>Cancel</Button>
+                <Button type="submit" variant="primary" icon={Save}>Save Profile</Button>
+              </div>
             </form>
           ) : (
             <div className="details-matrix profile-details-matrix">
@@ -70,6 +117,16 @@ export function ProfilePage({ user, notify, onLogout }) {
         </Card>
       </div>
     </section>
+  );
+}
+
+function SnapshotItem({ icon: Icon, label, value, tone = 'blue' }) {
+  return (
+    <div className={`profile-snapshot-item snapshot-${tone}`}>
+      <span><Icon size={17} /></span>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

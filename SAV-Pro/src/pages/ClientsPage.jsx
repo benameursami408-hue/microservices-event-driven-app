@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, CalendarDays, ClipboardList, Edit, Eye, Mail, MapPin, Phone, Plus, UserRound } from 'lucide-react';
+import { ArrowLeft, Building2, CalendarDays, ClipboardList, Edit, Eye, Mail, MapPin, Phone, Plus, Save, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ApiErrorState } from '../components/common/ApiErrorState';
@@ -149,7 +149,79 @@ export function ClientsPage({ notify, detail = false }) {
 }
 
 function ClientModal({ form, setForm, submit, modal, close }) {
-  return <Modal title={modal === 'edit' ? 'Edit Client' : 'Add Client'} onClose={close} footer={<Button variant="primary" icon={Plus} onClick={submit}>Save Client</Button>}><form className="form-grid" onSubmit={submit}>{['name', 'contact', 'email', 'phone', 'location'].map(key => <Field label={key[0].toUpperCase() + key.slice(1)} key={key}><input value={form[key] || ''} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></Field>)}</form></Modal>;
+  const isEdit = modal === 'edit';
+  const clientName = form.name || (isEdit ? 'Client account' : 'New client');
+  const contactName = form.contact || 'Primary contact';
+
+  return (
+    <Modal className="form-modal-card" title={isEdit ? 'Edit Client' : 'Add Client'} onClose={close} footer={(
+      <>
+        <Button type="button" onClick={close}>Cancel</Button>
+        <Button variant="primary" icon={Save} onClick={submit}>Save Client</Button>
+      </>
+    )}>
+      <div className="structured-modal client-entry-modal">
+        <div className="modal-summary-strip">
+          <div className="modal-summary-main">
+            <span className="modal-summary-icon"><Building2 size={22} /></span>
+            <div>
+              <span className="modal-summary-eyebrow">{isEdit ? 'Client account' : 'Directory entry'}</span>
+              <strong>{clientName}</strong>
+              <p>{contactName}</p>
+            </div>
+          </div>
+          <div className="modal-summary-metrics">
+            <span><Mail size={15} /><small>Email</small><strong>{form.email || 'Not set'}</strong></span>
+            <span><MapPin size={15} /><small>Location</small><strong>{form.location || 'Not set'}</strong></span>
+          </div>
+        </div>
+
+        <form className="structured-form client-form-grid" onSubmit={submit}>
+          <section className="form-section form-section-wide">
+            <div className="form-section-heading">
+              <span><Building2 size={16} /></span>
+              <h3>Account</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Client Name" className="full">
+                <input value={form.name || ''} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} placeholder="Company or account name" />
+              </Field>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <div className="form-section-heading">
+              <span><UserRound size={16} /></span>
+              <h3>Contact</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Contact" className="full">
+                <input value={form.contact || ''} onChange={event => setForm(current => ({ ...current, contact: event.target.value }))} placeholder="Primary contact" />
+              </Field>
+              <Field label="Email">
+                <input type="email" value={form.email || ''} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} placeholder="client@example.com" />
+              </Field>
+              <Field label="Phone">
+                <input type="tel" value={form.phone || ''} onChange={event => setForm(current => ({ ...current, phone: event.target.value }))} placeholder="+212 6 00 00 00 00" />
+              </Field>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <div className="form-section-heading">
+              <span><MapPin size={16} /></span>
+              <h3>Service location</h3>
+            </div>
+            <div className="structured-field-grid">
+              <Field label="Location" className="full">
+                <input value={form.location || ''} onChange={event => setForm(current => ({ ...current, location: event.target.value }))} placeholder="City, site, or address" />
+              </Field>
+            </div>
+          </section>
+        </form>
+      </div>
+    </Modal>
+  );
 }
 
 function Info({ label, value }) { return <div className="info-pair"><span>{label}</span><strong>{value}</strong></div>; }

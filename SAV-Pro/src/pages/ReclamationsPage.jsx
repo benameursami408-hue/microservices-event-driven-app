@@ -1,10 +1,14 @@
 import {
   AlertTriangle,
+  Building2,
   CalendarDays,
   CalendarPlus,
   CheckCircle,
+  ClipboardList,
   Download,
+  FileText,
   Filter,
+  Flag,
   Loader2,
   Mail,
   MapPin,
@@ -20,7 +24,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Avatar, Badge, Button, Card, DataTable, Field, IconButton, Modal, SearchInput, SelectFilter, Timeline } from '../components/ui';
+import { Avatar, Badge, Button, Card, DataTable, DeleteConfirmModal, Field, IconButton, Modal, SearchInput, SelectFilter, Timeline } from '../components/ui';
 import { AiPriorityAnalysisCard } from '../components/ai/AiPriorityAnalysisCard';
 import { ApiErrorState } from '../components/common/ApiErrorState';
 import { useClients } from '../hooks/useClients';
@@ -110,6 +114,10 @@ export function ReclamationsPage({ user, notify }) {
   const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
   const selected = reclamations.find(item => item.id === selectedId) || filteredRows[0] || reclamations[0];
   const selectedClientDetails = selected ? clientDetailsFor(selected, clients) : null;
+  const selectedFormClient = clients.find(client => String(client.id) === String(form.clientId));
+  const formClientName = selectedFormClient?.name || form.client || editingReclamation?.client || 'Client not selected';
+  const formProductLabel = form.product || editingReclamation?.product || 'Product pending';
+  const formPriorityLabel = form.priority || editingReclamation?.priority || 'Priority';
 
   const counts = useMemo(() => {
     return tabs.reduce((acc, tab) => {
@@ -552,64 +560,109 @@ export function ReclamationsPage({ user, notify }) {
       )}
 
       {(modal === 'new' || modal === 'edit') && allowCreateReclamation && (
-        <Modal title={editingReclamation ? 'Edit Reclamation' : 'New Reclamation'} onClose={() => { setModal(null); setEditingReclamation(null); }} footer={(
+        <Modal className="form-modal-card" title={editingReclamation ? 'Edit Reclamation' : 'New Reclamation'} onClose={() => { setModal(null); setEditingReclamation(null); }} footer={(
           <>
             <Button onClick={() => { setModal(null); setEditingReclamation(null); }}>Cancel</Button>
             <Button variant="primary" icon={editingReclamation ? Save : Plus} onClick={submitReclamation}>{editingReclamation ? 'Save Changes' : 'Create Reclamation'}</Button>
           </>
         )}>
-          <form className="form-grid reclamation-form-grid" onSubmit={submitReclamation}>
-            <Field label="Client" error={errors.client}>
-              <select value={form.clientId} disabled={Boolean(editingReclamation)} onChange={event => {
-                const client = clients.find(item => String(item.id) === event.target.value);
-                setForm(current => ({ ...current, clientId: event.target.value, client: client?.name || '' }));
-              }}>
-                <option value="">Select client</option>
-                {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Product" error={errors.product}>
-              <input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} placeholder="Product name" />
-            </Field>
-            <Field label="Model">
-              <input value={form.model} onChange={event => setForm(current => ({ ...current, model: event.target.value }))} placeholder="REF-2004" />
-            </Field>
-            <Field label="Priority" error={errors.priority}>
-              <select value={form.priority} onChange={event => setForm(current => ({ ...current, priority: event.target.value }))}>
-                <option>Urgent</option>
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
-            </Field>
-            <Field label="Serial Number">
-              <input value={form.serial} onChange={event => setForm(current => ({ ...current, serial: event.target.value }))} placeholder="REF-2004-0001" />
-            </Field>
-            <Field label="Site">
-              <input value={form.site} onChange={event => setForm(current => ({ ...current, site: event.target.value }))} placeholder="Installation site" />
-            </Field>
-            <Field label="Description (optional)">
-              <textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} placeholder="Describe the issue" />
-            </Field>
-          </form>
+          <div className="structured-modal reclamation-entry-modal">
+            <div className="modal-summary-strip">
+              <div className="modal-summary-main">
+                <span className="modal-summary-icon"><ClipboardList size={22} /></span>
+                <div>
+                  <span className="modal-summary-eyebrow">{editingReclamation ? 'Existing case' : 'New case'}</span>
+                  <strong>{formClientName}</strong>
+                  <p>{formProductLabel}</p>
+                </div>
+              </div>
+              <div className="modal-summary-metrics">
+                <span><Flag size={15} /><small>Priority</small><strong>{formPriorityLabel}</strong></span>
+                <span><MapPin size={15} /><small>Site</small><strong>{form.site || 'Not set'}</strong></span>
+              </div>
+            </div>
+
+            <form className="structured-form reclamation-form-grid" onSubmit={submitReclamation}>
+              <section className="form-section form-section-wide">
+                <div className="form-section-heading">
+                  <span><Building2 size={16} /></span>
+                  <h3>Client</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Client" error={errors.client} className="full">
+                    <select value={form.clientId} disabled={Boolean(editingReclamation)} onChange={event => {
+                      const client = clients.find(item => String(item.id) === event.target.value);
+                      setForm(current => ({ ...current, clientId: event.target.value, client: client?.name || '' }));
+                    }}>
+                      <option value="">Select client</option>
+                      {clients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
+                    </select>
+                  </Field>
+                </div>
+              </section>
+
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span><Package size={16} /></span>
+                  <h3>Product</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Product" error={errors.product} className="full">
+                    <input value={form.product} onChange={event => setForm(current => ({ ...current, product: event.target.value }))} placeholder="Product name" />
+                  </Field>
+                  <Field label="Model">
+                    <input value={form.model} onChange={event => setForm(current => ({ ...current, model: event.target.value }))} placeholder="REF-2004" />
+                  </Field>
+                  <Field label="Serial Number">
+                    <input value={form.serial} onChange={event => setForm(current => ({ ...current, serial: event.target.value }))} placeholder="REF-2004-0001" />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span><ShieldCheck size={16} /></span>
+                  <h3>Priority and site</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Priority" error={errors.priority}>
+                    <select value={form.priority} onChange={event => setForm(current => ({ ...current, priority: event.target.value }))}>
+                      <option>Urgent</option>
+                      <option>High</option>
+                      <option>Medium</option>
+                      <option>Low</option>
+                    </select>
+                  </Field>
+                  <Field label="Site">
+                    <input value={form.site} onChange={event => setForm(current => ({ ...current, site: event.target.value }))} placeholder="Installation site" />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="form-section form-section-wide">
+                <div className="form-section-heading">
+                  <span><FileText size={16} /></span>
+                  <h3>Issue details</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Description (optional)" className="full">
+                    <textarea value={form.description} onChange={event => setForm(current => ({ ...current, description: event.target.value }))} placeholder="Describe the issue" />
+                  </Field>
+                </div>
+              </section>
+            </form>
+          </div>
         </Modal>
       )}
 
       {modal === 'delete' && deleteTarget && (
-        <Modal title="Delete reclamation?" onClose={() => { setModal(null); setDeleteTarget(null); }} footer={(
-          <>
-            <Button onClick={() => { setModal(null); setDeleteTarget(null); }}>Cancel</Button>
-            <Button variant="primary" icon={Trash2} onClick={confirmDeleteReclamation}>Delete</Button>
-          </>
-        )}>
-          <div className="confirm-panel">
-            <AlertTriangle size={24} />
-            <div>
-              <strong>{deleteTarget.id}</strong>
-              <p>This action will remove the selected reclamation after backend verification.</p>
-            </div>
-          </div>
-        </Modal>
+        <DeleteConfirmModal
+          title="Delete reclamation?"
+          subject={deleteTarget.id}
+          description={`This will permanently remove the reclamation for ${deleteTarget.client || 'the selected client'} after backend verification.`}
+          onClose={() => { setModal(null); setDeleteTarget(null); }}
+          onConfirm={confirmDeleteReclamation}
+        />
       )}
 
       {modal === 'assign' && allowAssignTechnician && (

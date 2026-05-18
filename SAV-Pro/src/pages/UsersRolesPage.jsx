@@ -1,7 +1,7 @@
-import { Edit, Plus, ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import { Building2, Edit, Plus, ShieldCheck, ToggleLeft, ToggleRight, Trash2, UserRound } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { ApiErrorState } from '../components/common/ApiErrorState';
-import { Badge, Button, Card, DataTable, Field, Modal, SearchInput, SelectFilter } from '../components/ui';
+import { Badge, Button, Card, DataTable, DeleteConfirmModal, Field, Modal, SearchInput, SelectFilter } from '../components/ui';
 import { useUsers } from '../hooks/useUsers';
 import { getFriendlyApiError } from '../utils/errorMessages';
 import { canManageUsers } from '../utils/roleAccess';
@@ -14,6 +14,7 @@ export function UsersRolesPage({ user, notify }) {
   const [role, setRole] = useState('All');
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyUser);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const userResource = useUsers(role === 'All' ? undefined : role);
   const users = userResource.users;
   const visibleUsers = useMemo(
@@ -43,13 +44,21 @@ export function UsersRolesPage({ user, notify }) {
     }
   }
 
-  async function remove(row) {
+  function requestDelete(row) {
     if (!allowManageUsers) {
       notify("Cette action est reservee a l'administrateur.", 'error');
       return;
     }
+    setDeleteTarget(row);
+    setModal('delete');
+  }
+
+  async function confirmDeleteUser() {
+    if (!deleteTarget || !allowManageUsers) return;
     try {
-      await userResource.remove(row.technicalId || row.id);
+      await userResource.remove(deleteTarget.technicalId || deleteTarget.id);
+      setDeleteTarget(null);
+      setModal(null);
       notify('User deleted in backend');
     } catch (err) {
       notify(getFriendlyApiError(err), 'error');
@@ -119,7 +128,7 @@ export function UsersRolesPage({ user, notify }) {
                     >
                       {row.isActive ? 'Disable' : 'Enable'}
                     </Button>
-                    <Button size="sm" icon={Trash2} onClick={() => remove(row)}>
+                    <Button size="sm" icon={Trash2} onClick={() => requestDelete(row)}>
                       Delete
                     </Button>
                   </span>
@@ -131,46 +140,94 @@ export function UsersRolesPage({ user, notify }) {
         />
       </Card>
 
-      {modal && (
+      {(modal === 'new' || modal === 'edit') && (
         <Modal
+          className="form-modal-card"
           title={modal === 'edit' ? 'Edit User' : 'Add User'}
           onClose={() => setModal(null)}
           footer={
-            <Button variant="primary" icon={Plus} onClick={submit}>
-              Save User
-            </Button>
+            <>
+              <Button onClick={() => setModal(null)}>Cancel</Button>
+              <Button variant="primary" icon={Plus} onClick={submit}>
+                Save User
+              </Button>
+            </>
           }
         >
-          <form className="form-grid" onSubmit={submit}>
-            <Field label="Name">
-              <input value={form.name || ''} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} />
-            </Field>
-            <Field label="Email">
-              <input value={form.email || ''} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} />
-            </Field>
-            <Field label="Role">
-              <select value={form.role || ''} onChange={event => setForm(current => ({ ...current, role: event.target.value }))}>
-                <option value="">Select role</option>
-                <option>Admin</option>
-                <option>SAV</option>
-                <option>Technician</option>
-                <option>Client</option>
-              </select>
-            </Field>
-            {modal === 'new' && (
-              <Field label="Temporary Password">
-                <input
-                  value={form.password || ''}
-                  onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
-                  placeholder="ChangeMe123!"
-                />
-              </Field>
-            )}
-            <Field label="Company">
-              <input value={form.company || ''} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} />
-            </Field>
-          </form>
+          <div className="structured-modal user-entry-modal">
+            <div className="modal-summary-strip">
+              <div className="modal-summary-main">
+                <span className="modal-summary-icon"><UserRound size={22} /></span>
+                <div>
+                  <span className="modal-summary-eyebrow">{modal === 'edit' ? 'User account' : 'New account'}</span>
+                  <strong>{form.name || 'Name not set'}</strong>
+                  <p>{form.email || 'Email not set'}</p>
+                </div>
+              </div>
+              <div className="modal-summary-metrics">
+                <span><ShieldCheck size={15} /><small>Role</small><strong>{form.role || 'Select role'}</strong></span>
+                <span><Building2 size={15} /><small>Company</small><strong>{form.company || 'Not set'}</strong></span>
+              </div>
+            </div>
+
+            <form className="structured-form user-form-grid" onSubmit={submit}>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span><UserRound size={16} /></span>
+                  <h3>Identity</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Name" className="full">
+                    <input value={form.name || ''} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} />
+                  </Field>
+                  <Field label="Email" className="full">
+                    <input value={form.email || ''} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} />
+                  </Field>
+                  <Field label="Company" className="full">
+                    <input value={form.company || ''} onChange={event => setForm(current => ({ ...current, company: event.target.value }))} />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span><ShieldCheck size={16} /></span>
+                  <h3>Access</h3>
+                </div>
+                <div className="structured-field-grid">
+                  <Field label="Role" className="full">
+                    <select value={form.role || ''} onChange={event => setForm(current => ({ ...current, role: event.target.value }))}>
+                      <option value="">Select role</option>
+                      <option>Admin</option>
+                      <option>SAV</option>
+                      <option>Technician</option>
+                      <option>Client</option>
+                    </select>
+                  </Field>
+                  {modal === 'new' && (
+                    <Field label="Temporary Password" className="full">
+                      <input
+                        value={form.password || ''}
+                        onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
+                        placeholder="ChangeMe123!"
+                      />
+                    </Field>
+                  )}
+                </div>
+              </section>
+            </form>
+          </div>
         </Modal>
+      )}
+
+      {modal === 'delete' && deleteTarget && (
+        <DeleteConfirmModal
+          title="Delete user?"
+          subject={deleteTarget.name || deleteTarget.email || 'Selected user'}
+          description={`This will permanently delete ${deleteTarget.email || 'this account'} and remove its ${deleteTarget.role || 'user'} access.`}
+          onClose={() => { setModal(null); setDeleteTarget(null); }}
+          onConfirm={confirmDeleteUser}
+        />
       )}
     </section>
   );
