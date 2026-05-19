@@ -1850,6 +1850,7 @@
   box-shadow: var(--shadow);
 }
 
+.ownership-tabs,
 .status-tabs {
   height: 70px;
   display: flex;
@@ -1859,6 +1860,13 @@
   border-bottom: 1px solid var(--border);
 }
 
+.ownership-tabs {
+  height: 62px;
+  align-items: center;
+  background: #fbfdff;
+}
+
+.ownership-tabs button,
 .status-tabs button {
   position: relative;
   border: 0;
@@ -1871,6 +1879,15 @@
   font-weight: 760;
 }
 
+.ownership-tabs button {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #dce7f5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.ownership-tabs button span,
 .status-tabs button span {
   min-width: 24px;
   height: 22px;
@@ -1881,6 +1898,12 @@
   background: var(--primary-light);
   border-radius: 999px;
   font-size: 12px;
+}
+
+.ownership-tabs button.active {
+  color: #075ff0;
+  border-color: #b8d4ff;
+  background: #eef5ff;
 }
 
 .status-tabs button.active {
@@ -2157,6 +2180,97 @@ dd {
   color: var(--danger);
   border-color: #ffcaca;
   background: #fff0f0;
+}
+
+.table-take-action {
+  border: 1px solid #b8d4ff;
+  min-height: 31px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  color: #075ff0;
+  background: #eef5ff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.locked-row-icon {
+  color: #94a3b8;
+}
+
+.data-table tr.ownership-row-mine td {
+  box-shadow: inset 3px 0 0 #18b983;
+}
+
+.data-table tr.ownership-row-available td {
+  box-shadow: inset 3px 0 0 #1167ff;
+}
+
+.data-table tr.ownership-row-taken td {
+  color: #637083;
+  background: #fbfcfe;
+}
+
+.ownership-notice {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 18px 12px;
+  padding: 13px;
+  border-radius: 8px;
+}
+
+.ownership-notice.available {
+  color: #075ff0;
+  border: 1px solid #b8d4ff;
+  background: #eef5ff;
+}
+
+.ownership-notice.locked {
+  grid-template-columns: 28px minmax(0, 1fr);
+  color: #59667a;
+  border: 1px solid #dce4ee;
+  background: #f3f6fa;
+}
+
+.ownership-notice strong {
+  color: #16294a;
+}
+
+.ownership-notice p {
+  font-size: 12px;
+}
+
+.owner-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.owner-summary span {
+  display: grid;
+  gap: 5px;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #e2eaf5;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.owner-summary small {
+  color: #708096;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.owner-summary strong {
+  color: #172846;
+  overflow-wrap: anywhere;
 }
 
 .ai-priority-card {

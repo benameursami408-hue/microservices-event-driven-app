@@ -67,6 +67,7 @@ public class InterventionProjectionService
         reclamation.PlannedStartAt = null;
         reclamation.PlannedEndAt = null;
         reclamation.PlanningNote = message.ReasonText;
+        reclamation.PlanningRequestedAt = null;
         reclamation.RequiresReplanning = false;
         if (reclamation.Status == ReclamationStatus.Planned)
         {
@@ -117,6 +118,7 @@ public class InterventionProjectionService
             reclamation.Status = ReclamationStatus.Assigned;
             reclamation.PlannedStartAt = null;
             reclamation.PlannedEndAt = null;
+            reclamation.PlanningRequestedAt = null;
         }
         else
         {
@@ -137,6 +139,7 @@ public class InterventionProjectionService
         reclamation.Status = ReclamationStatus.Assigned;
         reclamation.PlannedStartAt = null;
         reclamation.PlannedEndAt = null;
+        reclamation.PlanningRequestedAt = null;
         reclamation.UpdatedAt = DateTime.UtcNow;
         _reclamationRepository.Update(reclamation);
         AppendHistory(reclamation, fromStatus, reclamation.Status, 0, "SYSTEM", $"Replanning required: {message.ReasonCode}");

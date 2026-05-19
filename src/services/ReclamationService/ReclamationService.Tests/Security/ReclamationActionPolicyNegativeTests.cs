@@ -42,6 +42,9 @@ public class ReclamationActionPolicyNegativeTests
             ClientName = "Client",
             SAVId = savId,
             SAVName = savId.HasValue ? "SAV" : null,
+            ClaimedBySavId = savId,
+            ClaimedBySavName = savId.HasValue ? "SAV" : null,
+            ClaimedAt = savId.HasValue ? DateTime.UtcNow : null,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };

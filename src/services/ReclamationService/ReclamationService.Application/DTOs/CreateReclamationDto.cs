@@ -10,9 +10,8 @@ public class CreateReclamationDto
 
     public long? ClientId { get; set; }
 
-    [Required]
     [EnumDataType(typeof(NamePriority))]
-    public NamePriority Priority { get; set; }
+    public NamePriority? Priority { get; set; }
 
     public bool IsBlocking { get; set; }
 

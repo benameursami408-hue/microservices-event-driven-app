@@ -51,7 +51,7 @@ public class NotificationWorkflow
         {
             Type = "RECLAMATION_CREATED",
             Title = "Reclamation created",
-            Message = $"Your reclamation '{message.Reference}' has been created with priority {message.Priority}.",
+            Message = $"Your reclamation '{message.Reference}' has been created and is pending SAV review.",
             UserId = message.ClientId,
             RecipientEmail = string.IsNullOrWhiteSpace(message.ClientEmail) ? null : message.ClientEmail,
             SourceEvent = message.EventType,
@@ -469,4 +469,3 @@ public class NotificationWorkflow
         await _notificationRepository.AddAsync(notification, cancellationToken);
     }
 }
-

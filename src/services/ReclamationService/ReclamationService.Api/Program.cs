@@ -176,6 +176,7 @@ if (!builder.Environment.IsDevelopment()
 
 builder.Services.AddScoped<IReclamationRepository, ReclamationRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
+builder.Services.AddScoped<IServiceUserRepository, ServiceUserRepository>();
 builder.Services.AddScoped<IAiPriorityAnalysisRepository, AiPriorityAnalysisRepository>();
 builder.Services.AddScoped<IReclamationHistoryRepository, ReclamationHistoryRepository>();
 builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
@@ -414,6 +415,33 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
 
         IF COL_LENGTH('dbo.Reclamations', 'SlaBreachedAt') IS NULL
             ALTER TABLE [dbo].[Reclamations] ADD [SlaBreachedAt] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ClaimedBySavId') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ClaimedBySavId] bigint NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ClaimedBySavName') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ClaimedBySavName] nvarchar(100) NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ClaimedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ClaimedAt] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'ReleasedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [ReleasedAt] datetime2 NULL;
+
+        IF COL_LENGTH('dbo.Reclamations', 'PlanningRequestedAt') IS NULL
+            ALTER TABLE [dbo].[Reclamations] ADD [PlanningRequestedAt] datetime2 NULL;
+
+        IF OBJECT_ID(N'[dbo].[ServiceUsers]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [dbo].[ServiceUsers](
+                [Id] bigint NOT NULL PRIMARY KEY,
+                [FullName] nvarchar(100) NOT NULL,
+                [Email] nvarchar(100) NOT NULL,
+                [Role] nvarchar(30) NOT NULL,
+                [UpdatedAt] datetime2 NOT NULL
+            );
+            CREATE INDEX [IX_ServiceUsers_Role] ON [dbo].[ServiceUsers]([Role]);
+        END
         """);
 
     if (app.Configuration.GetValue<bool>("Seed:Enabled"))

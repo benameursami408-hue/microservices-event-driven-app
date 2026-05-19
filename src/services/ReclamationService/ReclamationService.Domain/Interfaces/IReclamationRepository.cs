@@ -18,6 +18,7 @@ namespace ReclamationService.Domain.Interfaces
         public List<Reclamation> GetByPriority(NamePriority priority);
         public Reclamation Create(Reclamation reclamation);
         public Reclamation Update(Reclamation reclamation);
+        public Task<int> ClaimIfAvailableAsync(long id, long savId, string savName, DateTime claimedAt, CancellationToken cancellationToken = default);
         public void Delete(long id);
     }
 }

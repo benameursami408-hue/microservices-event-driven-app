@@ -35,7 +35,7 @@ function requireAnalysisPayload(payload = {}) {
     productName: payload.productName || '',
     brand: payload.brand || '',
     model: payload.model || '',
-    currentPriority: payload.currentPriority || 'Medium',
+    currentPriority: payload.currentPriority || 'Pending review',
     clientImpact: payload.clientImpact || ''
   };
 }

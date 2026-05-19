@@ -14,6 +14,9 @@ public static class ReclamationActionPolicy
     public const string Cancel = "CANCEL";
     public const string Reject = "REJECT";
     public const string Delete = "DELETE";
+    public const string Claim = "CLAIM";
+    public const string ReleaseOwnership = "RELEASE_OWNERSHIP";
+    public const string ReassignSav = "REASSIGN_SAV";
 
     public static List<string> GetAllowedActions(CurrentUser actor, Reclamation item)
     {
@@ -26,12 +29,30 @@ public static class ReclamationActionPolicy
         var isSt = role == "ST";
 
         var isMineClient = item.ClientId == actor.UserId;
-        var isMineSav = item.SAVId == actor.UserId;
+        var isMineSav = item.ClaimedBySavId == actor.UserId;
         var isMineTech = item.TechnicianId == actor.UserId;
+        var canWorkAsSav = isSav && isMineSav;
+        var canWork = isAdmin || canWorkAsSav;
+        var isTerminal = item.Status is ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected;
+
+        if (isSav && !item.ClaimedBySavId.HasValue && !isTerminal)
+        {
+            actions.Add(Claim);
+        }
+
+        if ((isAdmin || canWorkAsSav) && item.ClaimedBySavId.HasValue)
+        {
+            actions.Add(ReleaseOwnership);
+        }
+
+        if (isAdmin)
+        {
+            actions.Add(ReassignSav);
+        }
 
         var canEditDetails =
             isAdmin
-            || (isSav && isMineSav && item.Status is not (ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected))
+            || (canWorkAsSav && !isTerminal)
             || (isClient && isMineClient && item.Status == ReclamationStatus.Open);
 
         if (canEditDetails)
@@ -39,25 +60,23 @@ public static class ReclamationActionPolicy
             actions.Add(Edit);
         }
 
-        if ((isSav || isAdmin) && item.Status == ReclamationStatus.Open)
+        if (canWork && item.Status == ReclamationStatus.Open)
         {
             actions.Add(Assign);
         }
 
-        if ((isSav || isAdmin) && item.Status == ReclamationStatus.Assigned && (isAdmin || isMineSav))
+        if (canWork && item.Status == ReclamationStatus.Assigned)
         {
             actions.Add(RequestPlanning);
         }
 
-        if ((isSav || isAdmin)
-            && item.Status is not (ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected)
-            && (isAdmin || item.Status == ReclamationStatus.Open || isMineSav))
+        if (canWork && !isTerminal)
         {
             actions.Add(RecalculatePriority);
             actions.Add(OverridePriority);
         }
 
-        if ((isSav || isAdmin) && item.Status == ReclamationStatus.Resolved && (isAdmin || isMineSav))
+        if (canWork && item.Status == ReclamationStatus.Resolved)
         {
             actions.Add(Close);
         }
@@ -67,7 +86,7 @@ public static class ReclamationActionPolicy
             actions.Add(Cancel);
         }
 
-        if ((isSav || isAdmin) && item.Status is (ReclamationStatus.Open or ReclamationStatus.Assigned) && (isAdmin || isMineSav))
+        if (canWork && item.Status is (ReclamationStatus.Open or ReclamationStatus.Assigned))
         {
             actions.Add(Reject);
         }

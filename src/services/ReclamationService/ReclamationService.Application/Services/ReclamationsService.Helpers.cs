@@ -13,6 +13,8 @@ namespace ReclamationService.Application.Services;
 
 public partial class ReclamationsService
 {
+    private const string PendingPriorityReviewReason = "Priority not selected by client; awaiting AI/SAV review.";
+
     private Reclamation GetByIdInternal(long id)
     {
         var reclamation = _reclamationRepository.GetById(id);
@@ -53,8 +55,9 @@ public partial class ReclamationsService
         if (role == "SAV")
         {
             var isBacklog = reclamation.Status == ReclamationStatus.Open;
-            var isMine = reclamation.SAVId == actor.UserId;
-            if (!isBacklog && !isMine)
+            var isClaimedActive = reclamation.ClaimedBySavId.HasValue && IsActiveForSavQueue(reclamation);
+            var isMine = reclamation.ClaimedBySavId == actor.UserId || reclamation.SAVId == actor.UserId;
+            if (!isBacklog && !isClaimedActive && !isMine)
             {
                 throw new UnauthorizedAccessException();
             }
@@ -115,8 +118,45 @@ public partial class ReclamationsService
     private static ReclamationDto ToDtoWithActions(Reclamation item, CurrentUser actor)
     {
         var dto = item.ToDto();
+        ApplyOwnershipState(dto, item, actor);
         dto.AllowedActions = ReclamationActionPolicy.GetAllowedActions(actor, item);
         return dto;
+    }
+
+    private static void ApplyOwnershipState(ReclamationDto dto, Reclamation item, CurrentUser actor)
+    {
+        var role = NormalizeRole(actor.Role);
+        var isClient = role == "CLIENT";
+
+        if (isClient)
+        {
+            dto.ClaimedBySavId = null;
+            dto.ClaimedBySavName = null;
+            dto.ClaimedAt = null;
+            dto.ReleasedAt = null;
+            dto.IsClaimed = false;
+            dto.IsClaimedByCurrentUser = false;
+            dto.CanCurrentUserWorkOnIt = false;
+            dto.OwnershipLabel = null;
+            return;
+        }
+
+        dto.IsClaimed = item.ClaimedBySavId.HasValue;
+        dto.IsClaimedByCurrentUser = role == "SAV" && item.ClaimedBySavId == actor.UserId;
+        dto.CanCurrentUserWorkOnIt = role == "ADMIN" || dto.IsClaimedByCurrentUser;
+
+        if (!item.ClaimedBySavId.HasValue)
+        {
+            dto.OwnershipLabel = "Available";
+        }
+        else if (dto.IsClaimedByCurrentUser)
+        {
+            dto.OwnershipLabel = "Assigned to me";
+        }
+        else
+        {
+            dto.OwnershipLabel = $"Taken by {item.ClaimedBySavName ?? $"SAV#{item.ClaimedBySavId.Value}"}";
+        }
     }
 
     private async Task QueueStatusChangedAsync(
@@ -155,9 +195,9 @@ public partial class ReclamationsService
         var sla = _slaService.Compute(reclamation);
         _slaService.Apply(reclamation, sla);
 
-        var auto = _priorityService.Compute(reclamation);
         if (reclamation.ManualPriorityOverride)
         {
+            var auto = _priorityService.Compute(reclamation);
             var reasons = auto.Reasons.ToList();
             if (!string.IsNullOrWhiteSpace(reclamation.ManualPriorityOverrideReason))
             {
@@ -169,8 +209,16 @@ public partial class ReclamationsService
             reclamation.PrioritySource = PrioritySource.ManualOverride;
             reclamation.PriorityUpdatedAt ??= DateTime.UtcNow;
         }
+        else if (reclamation.PrioritySource == PrioritySource.PendingReview)
+        {
+            reclamation.Priority = NamePriority.LOW;
+            reclamation.Severity = NamePriority.LOW;
+            reclamation.PriorityScore = 0;
+            reclamation.PriorityReasons = SerializeReasons(new[] { PendingPriorityReviewReason });
+        }
         else
         {
+            var auto = _priorityService.Compute(reclamation);
             reclamation.Priority = auto.Level;
             reclamation.PriorityScore = auto.Score;
             reclamation.PriorityReasons = SerializeReasons(auto.Reasons);
@@ -463,20 +511,20 @@ public partial class ReclamationsService
         };
     }
 
-    private static void EnsurePriorityManagement(CurrentUser actor, Reclamation reclamation)
+    private void EnsurePriorityManagement(CurrentUser actor, Reclamation reclamation)
     {
         var role = NormalizeRole(actor.Role);
-        if (role == "ADMIN")
+        if (role is not ("ADMIN" or "SAV"))
         {
-            return;
+            throw new UnauthorizedAccessException();
         }
 
-        if (role == "SAV" && (reclamation.Status == ReclamationStatus.Open || reclamation.SAVId == actor.UserId))
-        {
-            return;
-        }
+        EnsureCanWork(actor, reclamation);
+    }
 
-        throw new UnauthorizedAccessException();
+    private static bool IsActiveForSavQueue(Reclamation reclamation)
+    {
+        return reclamation.Status is not (ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected);
     }
 
     private sealed record OperationalState(

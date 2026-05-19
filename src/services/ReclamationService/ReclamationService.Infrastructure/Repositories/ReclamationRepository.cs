@@ -73,7 +73,7 @@ namespace ReclamationService.Infrastructure.Repositories
         public List<Reclamation> GetForSav(long savId)
         {
             return _context.Reclamations
-                .Where(r => r.SAVId == savId)
+                .Where(r => r.SAVId == savId || r.ClaimedBySavId == savId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToList();
         }
@@ -114,6 +114,23 @@ namespace ReclamationService.Infrastructure.Repositories
             _context.Reclamations.Update(reclamation);
             _context.SaveChanges();
             return reclamation;
+        }
+
+        public Task<int> ClaimIfAvailableAsync(long id, long savId, string savName, DateTime claimedAt, CancellationToken cancellationToken = default)
+        {
+            return _context.Reclamations
+                .Where(r => r.Id == id
+                    && r.ClaimedBySavId == null
+                    && r.Status != ReclamationStatus.Closed
+                    && r.Status != ReclamationStatus.Cancelled
+                    && r.Status != ReclamationStatus.Rejected)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.ClaimedBySavId, savId)
+                    .SetProperty(r => r.ClaimedBySavName, savName)
+                    .SetProperty(r => r.ClaimedAt, claimedAt)
+                    .SetProperty(r => r.ReleasedAt, (DateTime?)null)
+                    .SetProperty(r => r.UpdatedAt, claimedAt),
+                    cancellationToken);
         }
     }
 }

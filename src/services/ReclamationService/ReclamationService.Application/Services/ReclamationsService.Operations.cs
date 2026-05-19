@@ -106,6 +106,11 @@ public partial class ReclamationsService
     {
         var reclamation = GetByIdVisible(id, actor);
         EnsurePriorityManagement(actor, reclamation);
+        if (reclamation.PrioritySource == PrioritySource.PendingReview)
+        {
+            throw new BadRequestException("Priority is pending review. Run AI analysis or apply a manual override.");
+        }
+
         var before = CaptureOperationalState(reclamation);
         reclamation.ManualPriorityOverride = false;
         reclamation.ManualPriorityOverrideReason = null;
@@ -141,6 +146,7 @@ public partial class ReclamationsService
         reclamation.ManualPriorityOverride = true;
         reclamation.ManualPriorityOverrideReason = dto.Reason.Trim();
         reclamation.Priority = dto.Priority;
+        reclamation.Severity = dto.Priority;
         reclamation.PrioritySource = PrioritySource.ManualOverride;
         reclamation.PriorityUpdatedAt = DateTime.UtcNow;
         ApplyDerivedState(reclamation);
@@ -172,16 +178,18 @@ public partial class ReclamationsService
         }
 
         var before = CaptureOperationalState(reclamation);
-        var previousPriority = ToDisplayPriority(reclamation.Priority);
+        var previousPriority = ToDisplayPriority(reclamation);
         var suggestedPriority = ParsePriority(analysis.SuggestedPriority);
         var suggestedDisplay = ToDisplayPriority(suggestedPriority);
         var finalReason = string.IsNullOrWhiteSpace(reason)
-            ? $"AI priority suggestion applied: {previousPriority} -> {suggestedDisplay}. Reason: {analysis.Reason}"
+            ? analysis.Reason
             : reason.Trim();
+        finalReason = $"AI priority suggestion applied by {GetActorDisplayName(actor)}: {previousPriority} -> {suggestedDisplay}. Reason: {finalReason}";
 
         reclamation.ManualPriorityOverride = true;
         reclamation.ManualPriorityOverrideReason = finalReason;
         reclamation.Priority = suggestedPriority;
+        reclamation.Severity = suggestedPriority;
         reclamation.PrioritySource = PrioritySource.ManualOverride;
         reclamation.PriorityUpdatedAt = DateTime.UtcNow;
         ApplyDerivedState(reclamation);
@@ -216,6 +224,13 @@ public partial class ReclamationsService
         return priority == NamePriority.MEDUIM
             ? "Medium"
             : priority.ToString()[0] + priority.ToString()[1..].ToLowerInvariant();
+    }
+
+    private static string ToDisplayPriority(Reclamation reclamation)
+    {
+        return reclamation.PrioritySource == PrioritySource.PendingReview
+            ? "Pending review"
+            : ToDisplayPriority(reclamation.Priority);
     }
 
 }

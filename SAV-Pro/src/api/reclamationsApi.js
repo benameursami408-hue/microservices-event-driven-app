@@ -39,6 +39,25 @@ export async function deleteReclamation(id) {
   });
 }
 
+export async function claimReclamation(id) {
+  return mapReclamationFromApi(await apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}/claim`, {
+    method: 'POST'
+  }));
+}
+
+export async function releaseReclamation(id) {
+  return mapReclamationFromApi(await apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}/release`, {
+    method: 'POST'
+  }));
+}
+
+export async function reassignReclamation(id, savUserId, savUserName = '') {
+  return mapReclamationFromApi(await apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}/reassign-sav`, {
+    method: 'POST',
+    body: { savUserId, savUserName }
+  }));
+}
+
 export async function requestPlanning(id, comment = '') {
   return mapReclamationFromApi(await apiRequest(`/api/reclamations/${getTechnicalReclamationId(id)}/request-planning`, {
     method: 'PATCH',

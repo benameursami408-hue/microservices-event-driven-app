@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import {
   assignToSav,
+  claimReclamation,
   createReclamation,
   deleteReclamation,
   getReclamation,
@@ -8,6 +9,8 @@ import {
   listReclamations,
   overridePriority,
   planReclamation,
+  reassignReclamation,
+  releaseReclamation,
   requestPlanning,
   updateReclamation
 } from '../api/reclamationsApi';
@@ -41,6 +44,21 @@ export function useReclamations(filters = {}, enabled = true) {
     },
     assignToSav: async (reclamation, sav) => {
       const result = await assignToSav(reclamation, sav);
+      await resource.reload();
+      return result;
+    },
+    claim: async reclamation => {
+      const result = await claimReclamation(reclamation);
+      await resource.reload();
+      return result;
+    },
+    release: async reclamation => {
+      const result = await releaseReclamation(reclamation);
+      await resource.reload();
+      return result;
+    },
+    reassignSav: async (reclamation, savUserId, savUserName) => {
+      const result = await reassignReclamation(reclamation, savUserId, savUserName);
       await resource.reload();
       return result;
     },

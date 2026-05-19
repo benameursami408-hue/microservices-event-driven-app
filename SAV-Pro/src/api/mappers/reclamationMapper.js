@@ -1,6 +1,11 @@
 import { fromApiPriority, toApiPriority } from './priorityMapper';
 import { fromApiReclamationStatus } from './statusMapper';
 
+export function isPendingPrioritySource(prioritySource) {
+  const normalized = String(prioritySource ?? '').replace(/[_\s-]/g, '').toLowerCase();
+  return normalized === '2' || normalized === 'pendingreview';
+}
+
 function formatDate(value) {
   if (!value) return '';
   const date = new Date(value);
@@ -23,6 +28,7 @@ function slaLabel(item) {
 export function mapReclamationFromApi(item = {}) {
   const reference = item.reference || `REC-${item.id}`;
   const product = item.productName || item.productReference || item.brand || 'Product';
+  const pendingPriority = isPendingPrioritySource(item.prioritySource);
   return {
     id: reference,
     technicalId: item.id,
@@ -36,12 +42,23 @@ export function mapReclamationFromApi(item = {}) {
     productModel: item.model || product,
     model: item.model || item.brand || '-',
     serial: item.serialNumber || item.barcode || item.productReference || '-',
-    priority: fromApiPriority(item.priority),
+    priority: pendingPriority ? 'Pending Review' : fromApiPriority(item.priority),
+    prioritySource: item.prioritySource,
+    isPriorityPendingReview: pendingPriority,
     status: fromApiReclamationStatus(item.status),
     created: formatDate(item.createdAt),
     createdShort: formatDate(item.createdAt).split(',')[0],
     assigned: item.technicianName || item.savName || '',
     assignedAvatar: item.technicianId || item.savId || '',
+    claimedBySavId: item.claimedBySavId || null,
+    claimedBySavName: item.claimedBySavName || '',
+    claimedAt: item.claimedAt || null,
+    releasedAt: item.releasedAt || null,
+    isClaimed: Boolean(item.isClaimed),
+    isClaimedByCurrentUser: Boolean(item.isClaimedByCurrentUser),
+    canCurrentUserWorkOnIt: Boolean(item.canCurrentUserWorkOnIt),
+    ownershipLabel: item.ownershipLabel || (item.isClaimed ? `Taken by ${item.claimedBySavName || 'SAV'}` : 'Available'),
+    planningRequestedAt: item.planningRequestedAt || null,
     technicianId: item.technicianId || '',
     description: item.description || '',
     source: 'Backend',
@@ -58,11 +75,9 @@ export function mapReclamationFromApi(item = {}) {
 }
 
 export function mapReclamationToCreateDto(payload = {}) {
-  return {
+  const dto = {
     clientId: payload.clientId ? Number(payload.clientId) : undefined,
     description: payload.description || '',
-    priority: toApiPriority(payload.priority),
-    isBlocking: ['Urgent', 'Critical'].includes(payload.priority),
     followUpCount: 0,
     productName: payload.product || '',
     brand: payload.brand || '',
@@ -72,6 +87,14 @@ export function mapReclamationToCreateDto(payload = {}) {
     sellerName: payload.sellerName || '',
     purchaseProofUrl: payload.purchaseProofUrl || ''
   };
+
+  const priority = toApiPriority(payload.priority);
+  if (priority) {
+    dto.priority = priority;
+    dto.isBlocking = ['Urgent', 'Critical'].includes(payload.priority);
+  }
+
+  return dto;
 }
 
 export function mapReclamationToUpdateDto(payload = {}) {

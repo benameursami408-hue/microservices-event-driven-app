@@ -10,6 +10,7 @@ namespace ReclamationService.Infrastructure.Data;
 public static class TestDataSeeder
 {
     private sealed record SeedClient(long Id, string FullName, string Email, string PhoneNumber);
+    private sealed record SeedServiceUser(long Id, string FullName, string Email, string Role);
 
     private sealed record SeedReclamation(
         long Id,
@@ -41,6 +42,12 @@ public static class TestDataSeeder
         new(504, "Supermarche Central", "client4@savpro.local", "+21670000504"),
         new(505, "Usine Textile Nord", "client5@savpro.local", "+21670000505"),
         new(506, "Residence Les Jardins", "client6@savpro.local", "+21670000506")
+    ];
+
+    private static readonly SeedServiceUser[] ServiceUsers =
+    [
+        new(100, "Admin SAV Pro", "admin@savpro.local", "ADMIN"),
+        new(200, "Sofia Mansouri", "sav@savpro.local", "SAV")
     ];
 
     private static readonly (string Product, string Brand, string Model, string Serial)[] Equipment =
@@ -102,6 +109,7 @@ public static class TestDataSeeder
         }
 
         await SeedClientsAsync(dbContext, logger, cancellationToken);
+        await SeedServiceUsersAsync(dbContext, logger, cancellationToken);
         await SeedReclamationsAsync(dbContext, reclamations, logger, cancellationToken);
         await SeedHistoriesAsync(dbContext, BuildHistories(reclamations), logger, cancellationToken);
         await SeedAiAnalysesAsync(dbContext, BuildAiAnalyses(reclamations), logger, cancellationToken);
@@ -222,8 +230,43 @@ public static class TestDataSeeder
         dbContext.ReclamationHistories.RemoveRange(await dbContext.ReclamationHistories.Where(h => ids.Contains(h.ReclamationId)).ToListAsync(cancellationToken));
         dbContext.Reclamations.RemoveRange(await dbContext.Reclamations.Where(r => ids.Contains(r.Id) || references.Contains(r.Reference)).ToListAsync(cancellationToken));
         dbContext.Clients.RemoveRange(await dbContext.Clients.Where(c => clientIds.Contains(c.Id)).ToListAsync(cancellationToken));
+        var serviceUserIds = ServiceUsers.Select(u => u.Id).ToArray();
+        dbContext.ServiceUsers.RemoveRange(await dbContext.ServiceUsers.Where(u => serviceUserIds.Contains(u.Id)).ToListAsync(cancellationToken));
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogWarning("Reclamation demo seed reset completed.");
+    }
+
+    private static async Task SeedServiceUsersAsync(AppDbContext dbContext, ILogger logger, CancellationToken cancellationToken)
+    {
+        var targetIds = ServiceUsers.Select(user => user.Id).ToArray();
+        var existing = await dbContext.ServiceUsers.Where(user => targetIds.Contains(user.Id)).ToListAsync(cancellationToken);
+        var existingById = existing.ToDictionary(user => user.Id);
+        var inserted = 0;
+
+        foreach (var seed in ServiceUsers)
+        {
+            if (existingById.TryGetValue(seed.Id, out var user))
+            {
+                user.FullName = seed.FullName;
+                user.Email = seed.Email;
+                user.Role = seed.Role;
+                user.UpdatedAt = DateTime.UtcNow;
+                continue;
+            }
+
+            dbContext.ServiceUsers.Add(new ServiceUser
+            {
+                Id = seed.Id,
+                FullName = seed.FullName,
+                Email = seed.Email,
+                Role = seed.Role,
+                UpdatedAt = DateTime.UtcNow
+            });
+            inserted++;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Reclamation demo seed service users completed. Inserted={InsertedCount}, Updated={UpdatedCount}.", inserted, existing.Count);
     }
 
     private static async Task SeedClientsAsync(AppDbContext dbContext, ILogger logger, CancellationToken cancellationToken)
@@ -323,14 +366,20 @@ public static class TestDataSeeder
         entity.Status = seed.Status;
         entity.ClientId = seed.ClientId;
         entity.ClientName = seed.ClientName;
-        entity.SAVId = 200;
-        entity.SAVName = "Sofia Mansouri";
-        entity.AssignedAt = seed.Status >= ReclamationStatus.Assigned ? seed.CreatedAt.AddHours(3) : null;
+        var hasSavWorkflow = seed.Status >= ReclamationStatus.Assigned && seed.Status != ReclamationStatus.Cancelled && seed.Status != ReclamationStatus.Rejected;
+        entity.SAVId = hasSavWorkflow ? 200 : null;
+        entity.SAVName = hasSavWorkflow ? "Sofia Mansouri" : null;
+        entity.ClaimedBySavId = hasSavWorkflow ? 200 : null;
+        entity.ClaimedBySavName = hasSavWorkflow ? "Sofia Mansouri" : null;
+        entity.ClaimedAt = hasSavWorkflow ? seed.CreatedAt.AddHours(2) : null;
+        entity.ReleasedAt = null;
+        entity.AssignedAt = hasSavWorkflow ? seed.CreatedAt.AddHours(3) : null;
         entity.TechnicianId = seed.TechnicianId;
         entity.TechnicianName = seed.TechnicianName;
         entity.PlannedStartAt = plannedStart;
         entity.PlannedEndAt = plannedEnd;
         entity.PlanningNote = plannedStart is null ? null : "Rendez-vous planifie depuis les donnees de demonstration.";
+        entity.PlanningRequestedAt = seed.Status >= ReclamationStatus.Planned && seed.Status != ReclamationStatus.Cancelled ? seed.CreatedAt.AddHours(8) : null;
         entity.ResolutionNote = seed.Status is ReclamationStatus.Resolved or ReclamationStatus.Closed ? "Resolution validee dans le scenario de demonstration." : null;
         entity.ResolvedAt = seed.Status is ReclamationStatus.Resolved or ReclamationStatus.Closed ? seed.CreatedAt.AddDays(2) : null;
         entity.ClosedAt = seed.Status == ReclamationStatus.Closed ? seed.CreatedAt.AddDays(3) : null;

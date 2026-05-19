@@ -33,6 +33,14 @@ public class ReclamationDto
     public long? SavId { get; set; }
     public string? SavName { get; set; }
     public DateTime? AssignedAt { get; set; }
+    public long? ClaimedBySavId { get; set; }
+    public string? ClaimedBySavName { get; set; }
+    public DateTime? ClaimedAt { get; set; }
+    public DateTime? ReleasedAt { get; set; }
+    public bool IsClaimed { get; set; }
+    public bool IsClaimedByCurrentUser { get; set; }
+    public bool CanCurrentUserWorkOnIt { get; set; }
+    public string? OwnershipLabel { get; set; }
 
     public long? TechnicianId { get; set; }
     public string? TechnicianName { get; set; }
@@ -41,6 +49,7 @@ public class ReclamationDto
     public DateTime? NextAppointmentAt { get; set; }
     public DateTime? NextAppointmentEndAt { get; set; }
     public string? PlanningNote { get; set; }
+    public DateTime? PlanningRequestedAt { get; set; }
     public bool RequiresReplanning { get; set; }
     public string? LastInterventionOutcome { get; set; }
     public string? LastInterventionReportSummary { get; set; }

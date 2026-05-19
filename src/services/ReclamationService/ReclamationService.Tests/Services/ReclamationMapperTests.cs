@@ -8,6 +8,42 @@ namespace ReclamationService.Tests.Services;
 public class ReclamationMapperTests
 {
     [Fact]
+    public void ToEntity_WhenPriorityMissing_MarksPendingReviewWithoutMediumDefault()
+    {
+        var dto = new CreateReclamationDto
+        {
+            Description = "Production is blocked.",
+            ProductName = "Generator"
+        };
+
+        var reclamation = dto.ToEntity(10, "Client");
+
+        Assert.Equal(NamePriority.LOW, reclamation.Priority);
+        Assert.Equal(NamePriority.LOW, reclamation.Severity);
+        Assert.Equal(PrioritySource.PendingReview, reclamation.PrioritySource);
+        Assert.False(reclamation.ManualPriorityOverride);
+        Assert.Equal(0, reclamation.PriorityScore);
+        Assert.Contains("awaiting AI/SAV review", reclamation.PriorityReasons ?? string.Empty);
+    }
+
+    [Fact]
+    public void ToEntity_WhenPriorityProvided_MarksManualOverride()
+    {
+        var dto = new CreateReclamationDto
+        {
+            Description = "Created by SAV.",
+            Priority = NamePriority.HIGH
+        };
+
+        var reclamation = dto.ToEntity(10, "Client");
+
+        Assert.Equal(NamePriority.HIGH, reclamation.Priority);
+        Assert.Equal(NamePriority.HIGH, reclamation.Severity);
+        Assert.Equal(PrioritySource.ManualOverride, reclamation.PrioritySource);
+        Assert.True(reclamation.ManualPriorityOverride);
+    }
+
+    [Fact]
     public void ApplyUpdate_OverwritesAndClearsEditableFields()
     {
         var reclamation = new Reclamation

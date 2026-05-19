@@ -183,7 +183,7 @@ export function Avatar({ name = 'User', initials, size = 'md', className = '' })
   );
 }
 
-export function DataTable({ columns, rows, selectedId, onRowClick, className = '' }) {
+export function DataTable({ columns, rows, selectedId, onRowClick, className = '', getRowClassName }) {
   return (
     <div className={`table-wrap ${className}`.trim()}>
       <table className="data-table">
@@ -196,7 +196,7 @@ export function DataTable({ columns, rows, selectedId, onRowClick, className = '
           {rows.map(row => (
             <tr
               key={row.id}
-              className={selectedId === row.id ? 'selected' : ''}
+              className={[selectedId === row.id ? 'selected' : '', getRowClassName?.(row) || ''].filter(Boolean).join(' ')}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
             >
               {columns.map(column => (

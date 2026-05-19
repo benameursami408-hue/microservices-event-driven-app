@@ -88,6 +88,15 @@ namespace ReclamationService.Domain.Entities
 
         public DateTime? AssignedAt { get; set; }
 
+        public long? ClaimedBySavId { get; set; }
+
+        [StringLength(100)]
+        public string? ClaimedBySavName { get; set; }
+
+        public DateTime? ClaimedAt { get; set; }
+
+        public DateTime? ReleasedAt { get; set; }
+
         public long? TechnicianId { get; set; }
 
         [StringLength(100)]
@@ -98,6 +107,8 @@ namespace ReclamationService.Domain.Entities
 
         [StringLength(500)]
         public string? PlanningNote { get; set; }
+
+        public DateTime? PlanningRequestedAt { get; set; }
 
         public bool RequiresReplanning { get; set; }
 

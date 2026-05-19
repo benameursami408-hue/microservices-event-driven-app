@@ -3,5 +3,6 @@ namespace ReclamationService.Domain.Enums;
 public enum PrioritySource
 {
     Rules = 0,
-    ManualOverride = 1
+    ManualOverride = 1,
+    PendingReview = 2
 }

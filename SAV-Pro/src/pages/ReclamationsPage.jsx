@@ -10,6 +10,7 @@ import {
   Filter,
   Flag,
   Loader2,
+  Lock,
   Mail,
   MapPin,
   Package,
@@ -20,7 +21,9 @@ import {
   ShieldCheck,
   Trash2,
   User,
+  UserCheck,
   UserPlus,
+  Unlock,
   X
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -32,10 +35,12 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useReclamations } from '../hooks/useReclamations';
 import { useUsers } from '../hooks/useUsers';
 import { getFriendlyApiError } from '../utils/errorMessages';
-import { canAccessPlanningRequests, canApplyAiPriority, canAssignTechnician, canCreateReclamation } from '../utils/roleAccess';
+import { canAccessPlanningRequests, canApplyAiPriority, canAssignTechnician, canCreateReclamation, isAdmin, isSav } from '../utils/roleAccess';
 import { fromApiReclamationStatus } from '../api/mappers/statusMapper';
 
 const tabs = ['All', 'Open', 'Assigned', 'In Progress', 'Resolved', 'Closed'];
+const savOwnershipTabs = ['Available', 'My Reclamations', 'Taken by Others'];
+const adminOwnershipTabs = ['All Ownership', 'Unassigned', 'Claimed'];
 const pageSize = 10;
 const blankReclamationForm = { clientId: '', client: '', product: '', model: '', serial: '', priority: 'High', description: '', site: '' };
 
@@ -53,6 +58,27 @@ function filterReclamations(rows, { status, query, client, product, model, prior
 
 function technicalIdOf(row) {
   return row?.technicalId || row?.raw?.id || row?.id;
+}
+
+function matchesOwnershipView(item, ownershipView, { adminMode, savMode }) {
+  if (savMode) {
+    if (ownershipView === 'Available') return !item.isClaimed;
+    if (ownershipView === 'My Reclamations') return item.isClaimedByCurrentUser;
+    if (ownershipView === 'Taken by Others') return item.isClaimed && !item.isClaimedByCurrentUser;
+  }
+
+  if (adminMode) {
+    if (ownershipView === 'Unassigned') return !item.isClaimed;
+    if (ownershipView === 'Claimed') return item.isClaimed;
+  }
+
+  return true;
+}
+
+function ownershipTone(row) {
+  if (!row?.isClaimed) return 'blue';
+  if (row.isClaimedByCurrentUser) return 'success';
+  return 'closed';
 }
 
 function clientDetailsFor(row, clients) {
@@ -81,6 +107,8 @@ function formFromReclamation(row = {}) {
 }
 
 export function ReclamationsPage({ user, notify }) {
+  const isAdminUser = isAdmin(user);
+  const isSavUser = isSav(user);
   const allowCreateReclamation = canCreateReclamation(user);
   const allowPlanningRequest = canAccessPlanningRequests(user);
   const allowAssignTechnician = canAssignTechnician(user);
@@ -89,13 +117,16 @@ export function ReclamationsPage({ user, notify }) {
   const reclamationResource = useReclamations();
   const clientsResource = useClients(allowCreateReclamation);
   const techniciansResource = useUsers('Technician', allowAssignTechnician);
+  const savUsersResource = useUsers('SAV', isAdminUser);
   const notificationsResource = useNotifications(20, allowApplyAiPriority);
   const reclamations = reclamationResource.reclamations;
   const clients = clientsResource.clients;
   const technicians = techniciansResource.users;
+  const savUsers = savUsersResource.users;
 
   const [selectedId, setSelectedId] = useState('');
   const [status, setStatus] = useState('All');
+  const [ownershipView, setOwnershipView] = useState(isSavUser ? 'Available' : 'All Ownership');
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState({ client: '', product: '', model: '', priority: '' });
   const [page, setPage] = useState(1);
@@ -104,15 +135,19 @@ export function ReclamationsPage({ user, notify }) {
   const [editingReclamation, setEditingReclamation] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [pendingTechnicianId, setPendingTechnicianId] = useState('');
+  const [pendingSavId, setPendingSavId] = useState('');
   const [errors, setErrors] = useState({});
   const [history, setHistory] = useState([]);
   const [historyError, setHistoryError] = useState('');
   const [aiState, setAiState] = useState({ loading: false, error: '', result: null });
 
-  const filteredRows = useMemo(() => filterReclamations(reclamations, { ...filters, status, query }), [reclamations, filters, status, query]);
+  const ownershipRows = useMemo(() => reclamations.filter(item => matchesOwnershipView(item, ownershipView, { adminMode: isAdminUser, savMode: isSavUser })), [reclamations, ownershipView, isAdminUser, isSavUser]);
+  const filteredRows = useMemo(() => filterReclamations(ownershipRows, { ...filters, status, query }), [ownershipRows, filters, status, query]);
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
   const visibleRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
-  const selected = reclamations.find(item => item.id === selectedId) || filteredRows[0] || reclamations[0];
+  const selected = filteredRows.find(item => item.id === selectedId) || filteredRows[0] || reclamations.find(item => item.id === selectedId) || reclamations[0];
+  const canWorkSelected = Boolean(selected?.canCurrentUserWorkOnIt || isAdminUser);
+  const isSelectedLockedForSav = Boolean(isSavUser && selected && !selected.canCurrentUserWorkOnIt);
   const selectedClientDetails = selected ? clientDetailsFor(selected, clients) : null;
   const selectedFormClient = clients.find(client => String(client.id) === String(form.clientId));
   const formClientName = selectedFormClient?.name || form.client || editingReclamation?.client || 'Client not selected';
@@ -121,25 +156,37 @@ export function ReclamationsPage({ user, notify }) {
 
   const counts = useMemo(() => {
     return tabs.reduce((acc, tab) => {
-      acc[tab] = tab === 'All' ? reclamations.length : reclamations.filter(item => item.status === tab).length;
+      acc[tab] = tab === 'All' ? ownershipRows.length : ownershipRows.filter(item => item.status === tab).length;
       return acc;
     }, {});
-  }, [reclamations]);
+  }, [ownershipRows]);
+
+  const ownershipCounts = useMemo(() => {
+    const source = isSavUser ? savOwnershipTabs : adminOwnershipTabs;
+    return source.reduce((acc, tab) => {
+      acc[tab] = reclamations.filter(item => matchesOwnershipView(item, tab, { adminMode: isAdminUser, savMode: isSavUser })).length;
+      return acc;
+    }, {});
+  }, [reclamations, isAdminUser, isSavUser]);
 
   const options = useMemo(() => ({
     clients: [...new Set(reclamations.map(item => item.client).filter(Boolean))],
     products: [...new Set(reclamations.map(item => item.product).filter(Boolean))],
     models: [...new Set(reclamations.map(item => item.model).filter(Boolean))],
-    priorities: ['Urgent', 'High', 'Medium', 'Low']
+    priorities: ['Pending Review', 'Urgent', 'High', 'Medium', 'Low']
   }), [reclamations]);
 
   useEffect(() => {
     setPage(1);
-  }, [status, query, filters]);
+  }, [status, ownershipView, query, filters]);
 
   useEffect(() => {
-    if (!selectedId && reclamations[0]) setSelectedId(reclamations[0].id);
-  }, [reclamations, selectedId]);
+    setOwnershipView(isSavUser ? 'Available' : 'All Ownership');
+  }, [isSavUser]);
+
+  useEffect(() => {
+    if (!selectedId && filteredRows[0]) setSelectedId(filteredRows[0].id);
+  }, [filteredRows, selectedId]);
 
   useEffect(() => {
     if (selected && !filteredRows.some(item => item.id === selected.id) && filteredRows[0]) {
@@ -152,6 +199,11 @@ export function ReclamationsPage({ user, notify }) {
     let active = true;
     setHistoryError('');
     setAiState(current => ({ ...current, result: null, error: '' }));
+    if (isSelectedLockedForSav) {
+      setHistory([]);
+      return () => { active = false; };
+    }
+
     reclamationResource.getHistory(selected)
       .then(rows => {
         if (!active) return;
@@ -172,7 +224,7 @@ export function ReclamationsPage({ user, notify }) {
       })
       .catch(() => {});
     return () => { active = false; };
-  }, [selected?.id]);
+  }, [selected?.id, isSelectedLockedForSav]);
 
   function updateFilter(key, value) {
     setFilters(current => ({ ...current, [key]: value }));
@@ -201,6 +253,7 @@ export function ReclamationsPage({ user, notify }) {
       ['Serial Number', 'serial'],
       ['Priority', 'priority'],
       ['Status', 'status'],
+      ['Ownership', 'ownershipLabel'],
       ['Created Date', 'created'],
       ['Assigned Technician', 'assigned']
     ];
@@ -271,13 +324,54 @@ export function ReclamationsPage({ user, notify }) {
 
   async function ensureSavAssigned(row) {
     if (!row) return row;
+    if (!row.canCurrentUserWorkOnIt && !isAdminUser) {
+      throw new Error(row.isClaimed ? row.ownershipLabel || 'This reclamation is already taken.' : 'Take ownership before working on this reclamation.');
+    }
     if (row.status !== 'Open') return row;
     return reclamationResource.assignToSav(row, user);
   }
 
+  async function handleClaim(row = selected) {
+    if (!row) return;
+    try {
+      const claimed = await reclamationResource.claim(row);
+      setSelectedId(claimed.id);
+      if (isSavUser) setOwnershipView('My Reclamations');
+      notify('Ownership taken');
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    }
+  }
+
+  async function handleRelease(row = selected) {
+    if (!row) return;
+    try {
+      const released = await reclamationResource.release(row);
+      setSelectedId(released.id);
+      if (isSavUser) setOwnershipView('Available');
+      notify('Ownership released');
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    }
+  }
+
+  async function handleReassignSav() {
+    if (!selected || !pendingSavId) return;
+    const sav = savUsers.find(item => String(item.id) === String(pendingSavId));
+    try {
+      const reassigned = await reclamationResource.reassignSav(selected, Number(pendingSavId), sav?.name || '');
+      setSelectedId(reassigned.id);
+      setModal(null);
+      setPendingSavId('');
+      notify(`Reassigned to ${sav?.name || 'selected SAV'}`);
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    }
+  }
+
   async function handleCreatePlanningRequest() {
     if (!selected) return;
-    if (!allowPlanningRequest) {
+    if (!allowPlanningRequest || !canWorkSelected) {
       notify('Cette action est réservée au service SAV ou à l’administrateur.', 'error');
       return;
     }
@@ -291,7 +385,7 @@ export function ReclamationsPage({ user, notify }) {
   }
 
   async function handleAssign() {
-    if (!allowAssignTechnician) {
+    if (!allowAssignTechnician || !canWorkSelected) {
       notify('Cette action est réservée au service SAV ou à l’administrateur.', 'error');
       return;
     }
@@ -311,6 +405,11 @@ export function ReclamationsPage({ user, notify }) {
 
   async function analyzePriority() {
     if (!selected) return;
+    if (!allowApplyAiPriority || !canWorkSelected) {
+      notify(selected?.ownershipLabel || 'Take ownership before analyzing priority.', 'error');
+      return;
+    }
+    const currentPriority = selected.isPriorityPendingReview ? 'Pending review' : selected.priority;
     setAiState({ loading: true, error: '', result: null });
     try {
       const result = await reclamationResource.analyzePriority({
@@ -320,8 +419,8 @@ export function ReclamationsPage({ user, notify }) {
         productName: selected.product,
         brand: selected.raw?.brand || '',
         model: selected.model,
-        currentPriority: selected.priority,
-        clientImpact: selected.priority === 'Urgent' ? 'critical' : ''
+        currentPriority,
+        clientImpact: currentPriority === 'Urgent' ? 'critical' : ''
       });
       setAiState({ loading: false, error: '', result });
     } catch (err) {
@@ -331,11 +430,12 @@ export function ReclamationsPage({ user, notify }) {
 
   async function applyAiSuggestion() {
     if (!selected || !aiState.result) return;
-    if (!allowApplyAiPriority) {
+    if (!allowApplyAiPriority || !canWorkSelected) {
       notify('Cette action est réservée au service SAV ou à l’administrateur.', 'error');
       return;
     }
-    const reason = `AI priority suggestion applied: ${selected.priority} -> ${aiState.result.suggestedPriority}. Reason: ${aiState.result.reason}`;
+    const currentPriority = selected.isPriorityPendingReview ? 'Pending review' : selected.priority;
+    const reason = `AI priority suggestion applied: ${currentPriority} -> ${aiState.result.suggestedPriority}. Reason: ${aiState.result.reason}`;
     try {
       if (aiState.result.analysisId) {
         await reclamationResource.applyAiPriorityAnalysis(selected, aiState.result.analysisId, { reason });
@@ -357,11 +457,11 @@ export function ReclamationsPage({ user, notify }) {
     }
   }
 
-  const isLoading = reclamationResource.loading || clientsResource.loading || techniciansResource.loading;
-  const loadError = reclamationResource.error || clientsResource.error || techniciansResource.error;
-  const loadErrorStatus = reclamationResource.errorStatus || clientsResource.errorStatus || techniciansResource.errorStatus;
-  const canRequestSelectedPlanning = Boolean(selected && allowPlanningRequest && ['Open', 'Assigned'].includes(selected.status));
-  const canAssignSelectedTechnician = Boolean(selected && allowAssignTechnician && ['Open', 'Assigned', 'Planned'].includes(selected.status));
+  const isLoading = reclamationResource.loading || clientsResource.loading || techniciansResource.loading || savUsersResource.loading;
+  const loadError = reclamationResource.error || clientsResource.error || techniciansResource.error || savUsersResource.error;
+  const loadErrorStatus = reclamationResource.errorStatus || clientsResource.errorStatus || techniciansResource.errorStatus || savUsersResource.errorStatus;
+  const canRequestSelectedPlanning = Boolean(selected && allowPlanningRequest && canWorkSelected && ['Open', 'Assigned'].includes(selected.status));
+  const canAssignSelectedTechnician = Boolean(selected && allowAssignTechnician && canWorkSelected && ['Open', 'Assigned', 'Planned'].includes(selected.status));
 
   return (
     <section className="reclamations-page split-admin-page">
@@ -399,6 +499,17 @@ export function ReclamationsPage({ user, notify }) {
         </Card>
 
         <Card className="reclamation-table-card">
+          {(isSavUser || isAdminUser) && (
+            <div className="ownership-tabs">
+              {(isSavUser ? savOwnershipTabs : adminOwnershipTabs).map(tab => (
+                <button type="button" key={tab} className={ownershipView === tab ? 'active' : ''} onClick={() => setOwnershipView(tab)}>
+                  {tab}
+                  <span>{ownershipCounts[tab] || 0}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="status-tabs">
             {tabs.map(tab => (
               <button type="button" key={tab} className={status === tab ? 'active' : ''} onClick={() => setStatus(tab)}>
@@ -421,6 +532,7 @@ export function ReclamationsPage({ user, notify }) {
               rows={visibleRows}
               selectedId={selected?.id}
               onRowClick={row => setSelectedId(row.id)}
+              getRowClassName={row => row.isClaimedByCurrentUser ? 'ownership-row-mine' : row.isClaimed ? 'ownership-row-taken' : 'ownership-row-available'}
               columns={[
                 { key: 'id', label: 'Reference', render: row => <button type="button" className="table-link" onClick={event => { event.stopPropagation(); setSelectedId(row.id); }}>{row.id}</button> },
                 { key: 'client', label: 'Client' },
@@ -429,6 +541,7 @@ export function ReclamationsPage({ user, notify }) {
                 { key: 'serial', label: 'Serial Number' },
                 { key: 'priority', label: 'Priority', render: row => <Badge>{row.priority}</Badge> },
                 { key: 'status', label: 'Status', render: row => <Badge>{row.status}</Badge> },
+                { key: 'ownership', label: 'Ownership', render: row => <Badge tone={ownershipTone(row)}>{row.ownershipLabel}</Badge> },
                 { key: 'created', label: 'Created Date' },
                 {
                   key: 'assigned',
@@ -443,16 +556,23 @@ export function ReclamationsPage({ user, notify }) {
                 {
                   key: 'actions',
                   label: 'Actions',
-                  render: row => allowCreateReclamation ? (
+                  render: row => (
                     <span className="row-actions">
-                      <button type="button" className="table-icon-action" title="Edit reclamation" onClick={event => { event.stopPropagation(); openEditReclamation(row); }}>
+                      {isSavUser && !row.isClaimed ? (
+                        <button type="button" className="table-take-action" title="Take ownership" onClick={event => { event.stopPropagation(); handleClaim(row); }}>
+                          <UserCheck size={14} />
+                          Take
+                        </button>
+                      ) : null}
+                      {allowCreateReclamation && (row.canCurrentUserWorkOnIt || isAdminUser) ? <button type="button" className="table-icon-action" title="Edit reclamation" onClick={event => { event.stopPropagation(); openEditReclamation(row); }}>
                         <Pencil size={15} />
-                      </button>
-                      <button type="button" className="table-icon-action danger" title="Delete reclamation" onClick={event => { event.stopPropagation(); setDeleteTarget(row); setModal('delete'); }}>
+                      </button> : null}
+                      {isSavUser && row.isClaimed && !row.isClaimedByCurrentUser ? <Lock size={15} className="locked-row-icon" /> : null}
+                      {allowCreateReclamation && isAdminUser ? <button type="button" className="table-icon-action danger" title="Delete reclamation" onClick={event => { event.stopPropagation(); setDeleteTarget(row); setModal('delete'); }}>
                         <Trash2 size={15} />
-                      </button>
+                      </button> : null}
                     </span>
-                  ) : '-'
+                  )
                 }
               ]}
             />
@@ -479,11 +599,35 @@ export function ReclamationsPage({ user, notify }) {
             <div>
               <h2>{selected.id}</h2>
               <Badge>{selected.status}</Badge>
+              <Badge tone={ownershipTone(selected)}>{selected.ownershipLabel}</Badge>
             </div>
             <div>
+              {isSavUser && !selected.isClaimed ? <Button size="sm" variant="primary" icon={UserCheck} onClick={() => handleClaim(selected)}>Take ownership</Button> : null}
+              {selected.isClaimed && (selected.isClaimedByCurrentUser || isAdminUser) ? <IconButton icon={Unlock} label="Release ownership" className="ghost" onClick={() => handleRelease(selected)} /> : null}
               <IconButton icon={X} label="Close details" className="ghost" onClick={() => notify('Details panel kept open for desktop layout')} />
             </div>
           </header>
+
+          {isSelectedLockedForSav && (
+            <section className="ownership-notice locked">
+              <Lock size={18} />
+              <div>
+                <strong>{selected.ownershipLabel}</strong>
+                <p>This reclamation is read-only for your account.</p>
+              </div>
+            </section>
+          )}
+
+          {isSavUser && selected && !selected.isClaimed && (
+            <section className="ownership-notice available">
+              <UserCheck size={18} />
+              <div>
+                <strong>Take ownership to work on this reclamation.</strong>
+                <p>Actions unlock only after the claim succeeds.</p>
+              </div>
+              <Button size="sm" variant="primary" icon={UserCheck} onClick={() => handleClaim(selected)}>Take ownership</Button>
+            </section>
+          )}
 
           <div className="sla-box">
             <AlertTriangle size={24} />
@@ -503,16 +647,20 @@ export function ReclamationsPage({ user, notify }) {
             <p>{selected.description}</p>
           </section>
 
-          <AiPriorityAnalysisCard
-            reclamation={selected}
-            analysis={aiState.result}
-            loading={aiState.loading}
-            error={aiState.error}
-            onAnalyze={analyzePriority}
-            onApply={applyAiSuggestion}
-            onRetry={analyzePriority}
-            canApply={allowApplyAiPriority}
-          />
+          {!isSelectedLockedForSav && (
+            <AiPriorityAnalysisCard
+              reclamation={selected}
+              analysis={aiState.result}
+              loading={aiState.loading}
+              error={aiState.error}
+              onAnalyze={analyzePriority}
+              onApply={applyAiSuggestion}
+              onRetry={analyzePriority}
+              canAnalyze={allowApplyAiPriority && canWorkSelected}
+              canApply={allowApplyAiPriority && canWorkSelected}
+              applyDisabledReason={selected.isClaimed ? selected.ownershipLabel : 'Take ownership before using AI priority.'}
+            />
+          )}
 
           <section className="info-columns">
             <div>
@@ -542,6 +690,20 @@ export function ReclamationsPage({ user, notify }) {
             <span><small>Reported By</small><strong>{selected.contact}</strong></span>
           </div>
 
+          {isAdminUser && (
+            <section className="drawer-section admin-ownership-actions">
+              <h3>Ownership</h3>
+              <div className="owner-summary">
+                <span><small>SAV owner</small><strong>{selected.claimedBySavName || 'Unassigned'}</strong></span>
+                <span><small>Owner id</small><strong>{selected.claimedBySavId || '-'}</strong></span>
+              </div>
+              <div className="drawer-actions">
+                {selected.isClaimed ? <Button icon={Unlock} onClick={() => handleRelease(selected)}>Release</Button> : null}
+                <Button variant="primary" icon={UserPlus} onClick={() => { setPendingSavId(String(selected.claimedBySavId || '')); setModal('reassign-sav'); }}>Reassign SAV</Button>
+              </div>
+            </section>
+          )}
+
           {(canRequestSelectedPlanning || canAssignSelectedTechnician) && (
             <section className="drawer-section">
               <h3>Actions</h3>
@@ -552,10 +714,12 @@ export function ReclamationsPage({ user, notify }) {
             </section>
           )}
 
-          <section className="drawer-section">
-            <h3>Reclamation History</h3>
-            {historyError ? <p>{historyError}</p> : <Timeline items={history} compact />}
-          </section>
+          {!isSelectedLockedForSav && (
+            <section className="drawer-section">
+              <h3>Reclamation History</h3>
+              {historyError ? <p>{historyError}</p> : <Timeline items={history} compact />}
+            </section>
+          )}
         </aside>
       )}
 
@@ -695,6 +859,40 @@ export function ReclamationsPage({ user, notify }) {
                 </div>
                 <span className="request-line"><UserPlus size={16} />{technician.role}</span>
                 <span className="request-line"><Mail size={16} />{technician.email}</span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+
+      {modal === 'reassign-sav' && isAdminUser && (
+        <Modal title="Reassign SAV ownership" onClose={() => { setModal(null); setPendingSavId(''); }} footer={(
+          <>
+            <Button onClick={() => { setModal(null); setPendingSavId(''); }}>Cancel</Button>
+            <Button variant="primary" icon={UserPlus} onClick={handleReassignSav} disabled={!pendingSavId}>Confirm Reassign</Button>
+          </>
+        )}>
+          <div className="assign-summary">
+            <ShieldCheck size={20} />
+            <div>
+              <strong>{selected?.id}</strong>
+              <p>{selected?.claimedBySavName ? `Current owner: ${selected.claimedBySavName}` : 'No SAV owner yet.'}</p>
+            </div>
+          </div>
+          <div className="request-card-list assign-technician-list">
+            {savUsers.map(sav => (
+              <button
+                type="button"
+                key={sav.id}
+                className={`planning-request-card ${String(pendingSavId) === String(sav.id) ? 'active' : ''}`}
+                onClick={() => setPendingSavId(String(sav.id))}
+              >
+                <div className="request-card-head">
+                  <strong>{sav.name}</strong>
+                  {String(selected?.claimedBySavId) === String(sav.id) ? <Badge tone="success">Current</Badge> : null}
+                </div>
+                <span className="request-line"><UserPlus size={16} />{sav.role}</span>
+                <span className="request-line"><Mail size={16} />{sav.email}</span>
               </button>
             ))}
           </div>

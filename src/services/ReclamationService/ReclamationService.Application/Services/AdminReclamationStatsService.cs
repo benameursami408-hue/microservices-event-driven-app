@@ -51,8 +51,28 @@ public class AdminReclamationStatsService
                 ClientName = r.ClientName,
                 CreatedAt = r.CreatedAt,
                 SavName = r.SAVName,
+                ClaimedBySavId = r.ClaimedBySavId,
+                ClaimedBySavName = r.ClaimedBySavName,
+                ClaimedAt = r.ClaimedAt,
                 TechnicianName = r.TechnicianName
             })
+            .ToListAsync();
+
+        var workload = await query
+            .Where(r => r.ClaimedBySavId.HasValue
+                && r.Status != ReclamationStatus.Closed
+                && r.Status != ReclamationStatus.Cancelled
+                && r.Status != ReclamationStatus.Rejected)
+            .GroupBy(r => new { SavId = r.ClaimedBySavId!.Value, SavName = r.ClaimedBySavName })
+            .Select(g => new SavWorkloadDto
+            {
+                SavId = g.Key.SavId,
+                SavName = g.Key.SavName ?? $"SAV#{g.Key.SavId}",
+                ActiveClaimedCount = g.Count(),
+                UrgentOrHighCount = g.Count(r => r.Priority == NamePriority.URGENT || r.Priority == NamePriority.HIGH)
+            })
+            .OrderByDescending(x => x.ActiveClaimedCount)
+            .ThenBy(x => x.SavName)
             .ToListAsync();
 
         var fromDate = DateTime.UtcNow.Date.AddDays(-(days - 1));
@@ -94,7 +114,8 @@ public class AdminReclamationStatsService
             ByPriority = priorityCounts.OrderBy(x => x.Priority).ToList(),
             ByCategory = categoryCounts.OrderBy(x => x.Category).ToList(),
             Trend = trend,
-            Latest = latestItems
+            Latest = latestItems,
+            WorkloadBySav = workload
         };
     }
 }

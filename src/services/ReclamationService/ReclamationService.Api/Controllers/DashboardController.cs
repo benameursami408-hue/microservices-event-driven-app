@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ReclamationService.Application.Services;
+using System.Security.Claims;
 
 namespace ReclamationService.API.Controllers;
 
@@ -20,6 +21,12 @@ public class DashboardController : ControllerBase
     public async Task<ActionResult<object>> GetSummary([FromQuery] int days = 14, [FromQuery] int latest = 8)
     {
         var reclamations = await _statsService.GetStatsAsync(days, latest);
+        var role = User.FindFirstValue(ClaimTypes.Role) ?? User.FindFirstValue("role") ?? string.Empty;
+        if (!string.Equals(role, "ADMIN", StringComparison.OrdinalIgnoreCase))
+        {
+            reclamations.WorkloadBySav = new();
+        }
+
         var openReclamations = reclamations.Kpis.Open + reclamations.Kpis.Assigned + reclamations.Kpis.Planned + reclamations.Kpis.InProgress;
         var highRiskPriorities = reclamations.ByPriority
             .Where(x => string.Equals(x.Priority.ToString(), "HIGH", StringComparison.OrdinalIgnoreCase)

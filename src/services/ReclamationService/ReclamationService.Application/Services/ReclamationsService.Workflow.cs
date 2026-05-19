@@ -28,11 +28,7 @@ public partial class ReclamationsService
         }
         else if (role == "SAV")
         {
-            if (existing.SAVId != actor.UserId)
-            {
-                throw new UnauthorizedAccessException();
-            }
-
+            EnsureCanWork(actor, existing);
             if (existing.Status is ReclamationStatus.Closed or ReclamationStatus.Cancelled or ReclamationStatus.Rejected)
             {
                 throw new BadRequestException("Cannot update a closed/cancelled/rejected reclamation.");
@@ -55,6 +51,7 @@ public partial class ReclamationsService
         EnsureRole(actor, "SAV", "ADMIN");
 
         var reclamation = GetByIdInternal(id);
+        EnsureCanWork(actor, reclamation);
 
         if (reclamation.Status != ReclamationStatus.Open)
         {
@@ -72,12 +69,8 @@ public partial class ReclamationsService
         }
         else
         {
-            savId = actor.UserId;
-            savName = actor.FullName;
-            if (string.IsNullOrWhiteSpace(savName))
-            {
-                savName = actor.Email;
-            }
+            savId = reclamation.ClaimedBySavId ?? actor.UserId;
+            savName = reclamation.ClaimedBySavName ?? GetActorDisplayName(actor);
         }
 
         if (savId <= 0)
@@ -90,6 +83,9 @@ public partial class ReclamationsService
         reclamation.SAVId = savId;
         reclamation.SAVName = savName;
         reclamation.AssignedAt = DateTime.UtcNow;
+        reclamation.ClaimedBySavId ??= savId;
+        reclamation.ClaimedBySavName ??= savName;
+        reclamation.ClaimedAt ??= DateTime.UtcNow;
         reclamation.Status = ReclamationStatus.Assigned;
         ApplyDerivedState(reclamation);
 
@@ -139,18 +135,15 @@ public partial class ReclamationsService
 
         var reclamation = GetByIdInternal(id);
         var role = NormalizeRole(actor.Role);
+        EnsureCanWork(actor, reclamation);
 
         if (reclamation.Status is not (ReclamationStatus.Assigned or ReclamationStatus.Planned))
         {
             throw new BadRequestException("Only ASSIGNED or PLANNED reclamations can be planned.");
         }
 
-        if (role == "SAV" && reclamation.SAVId != actor.UserId)
-        {
-            throw new UnauthorizedAccessException();
-        }
-
-        if (reclamation.SAVId is null || reclamation.SAVId <= 0)
+        var effectiveSavId = reclamation.ClaimedBySavId ?? reclamation.SAVId;
+        if (effectiveSavId is null || effectiveSavId <= 0)
         {
             throw new BadRequestException("Reclamation must be assigned to a SAV before planning.");
         }
@@ -180,7 +173,7 @@ public partial class ReclamationsService
 
         var clientEmail = _clientRepository.GetById(updated.ClientId)?.Email ?? string.Empty;
 
-        var savId = updated.SAVId ?? throw new InvalidOperationException("Reclamation is planned but has no SAV assigned.");
+        var savId = updated.ClaimedBySavId ?? updated.SAVId ?? throw new InvalidOperationException("Reclamation is planned but has no SAV assigned.");
         var plannedStartAt = updated.PlannedStartAt ?? throw new InvalidOperationException("Reclamation is planned but PlannedStartAt is null.");
 
         await _outboxWriter.EnqueueAsync(new ReclamationPlannedEvent
@@ -191,7 +184,7 @@ public partial class ReclamationsService
             ClientId = updated.ClientId,
             ClientEmail = clientEmail,
             SavId = savId,
-            SavName = updated.SAVName ?? string.Empty,
+            SavName = updated.ClaimedBySavName ?? updated.SAVName ?? string.Empty,
             TechnicianId = dto.TechnicianId,
             TechnicianName = dto.TechnicianName ?? string.Empty,
             PlannedStartAt = plannedStartAt,
@@ -213,19 +206,22 @@ public partial class ReclamationsService
 
         var reclamation = GetByIdInternal(id);
         var role = NormalizeRole(actor.Role);
+        EnsureCanWork(actor, reclamation);
 
         if (reclamation.Status != ReclamationStatus.Assigned)
         {
             throw new BadRequestException("Only ASSIGNED reclamations can request planning.");
         }
 
-        if (role == "SAV" && reclamation.SAVId != actor.UserId)
+        if (reclamation.PlanningRequestedAt.HasValue && !reclamation.RequiresReplanning)
         {
-            throw new UnauthorizedAccessException();
+            throw new ConflictException("A planning request already exists for this reclamation.");
         }
 
         var before = CaptureOperationalState(reclamation);
         var client = _clientRepository.GetById(reclamation.ClientId);
+        var savId = reclamation.ClaimedBySavId ?? reclamation.SAVId ?? actor.UserId;
+        var savName = reclamation.ClaimedBySavName ?? reclamation.SAVName ?? GetActorDisplayName(actor);
         await _outboxWriter.EnqueueAsync(new PlanningRequestedEvent
         {
             CorrelationId = actor.CorrelationId,
@@ -236,8 +232,8 @@ public partial class ReclamationsService
             ClientEmail = client?.Email ?? string.Empty,
             CustomerPhone = client?.PhoneNumber,
             ServiceAddress = null,
-            SavId = reclamation.SAVId ?? actor.UserId,
-            SavName = reclamation.SAVName ?? actor.FullName ?? string.Empty,
+            SavId = savId,
+            SavName = savName,
             Priority = reclamation.Priority.ToString().ToUpperInvariant(),
             ProductName = reclamation.ProductName,
             Brand = reclamation.Brand,
@@ -257,6 +253,8 @@ public partial class ReclamationsService
             OccurredAt = DateTime.UtcNow
         });
 
+        reclamation.PlanningRequestedAt = DateTime.UtcNow;
+        reclamation.RequiresReplanning = false;
         ApplyDerivedState(reclamation);
         var updated = _reclamationRepository.Update(reclamation);
         await QueueOperationalEventsAsync(updated, before, actor.CorrelationId, actor.UserId, role);
@@ -351,15 +349,11 @@ public partial class ReclamationsService
 
         var reclamation = GetByIdInternal(id);
         var role = NormalizeRole(actor.Role);
+        EnsureCanWork(actor, reclamation);
 
         if (reclamation.Status != ReclamationStatus.Resolved)
         {
             throw new BadRequestException("Only RESOLVED reclamations can be closed.");
-        }
-
-        if (role == "SAV" && reclamation.SAVId != actor.UserId)
-        {
-            throw new UnauthorizedAccessException();
         }
 
         var fromStatus = reclamation.Status;
@@ -433,16 +427,11 @@ public partial class ReclamationsService
 
         var reclamation = GetByIdInternal(id);
         var role = NormalizeRole(actor.Role);
+        EnsureCanWork(actor, reclamation);
 
         if (reclamation.Status is not (ReclamationStatus.Open or ReclamationStatus.Assigned))
         {
             throw new BadRequestException("Only OPEN or ASSIGNED reclamations can be rejected.");
-        }
-
-        if (role == "SAV" && reclamation.SAVId != actor.UserId)
-        {
-            // SAV can only reject items assigned to them; unassigned items can be rejected by ADMIN.
-            throw new UnauthorizedAccessException();
         }
 
         var fromStatus = reclamation.Status;

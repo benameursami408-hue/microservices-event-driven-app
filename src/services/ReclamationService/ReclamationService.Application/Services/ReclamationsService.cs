@@ -15,6 +15,7 @@ public partial class ReclamationsService
 {
     private readonly IReclamationRepository _reclamationRepository;
     private readonly IClientRepository _clientRepository;
+    private readonly IServiceUserRepository _serviceUserRepository;
     private readonly IReclamationHistoryRepository _historyRepository;
     private readonly IOutboxWriter _outboxWriter;
     private readonly TicketClassificationService _classificationService;
@@ -24,6 +25,7 @@ public partial class ReclamationsService
     public ReclamationsService(
         IReclamationRepository reclamationRepository,
         IClientRepository clientRepository,
+        IServiceUserRepository serviceUserRepository,
         IReclamationHistoryRepository historyRepository,
         IOutboxWriter outboxWriter,
         TicketClassificationService classificationService,
@@ -32,6 +34,7 @@ public partial class ReclamationsService
     {
         _reclamationRepository = reclamationRepository;
         _clientRepository = clientRepository;
+        _serviceUserRepository = serviceUserRepository;
         _historyRepository = historyRepository;
         _outboxWriter = outboxWriter;
         _classificationService = classificationService;
@@ -46,6 +49,13 @@ public partial class ReclamationsService
         var role = NormalizeRole(actor.Role);
         var clientId = actor.UserId;
         var clientName = string.IsNullOrWhiteSpace(actor.FullName) ? (actor.Email ?? string.Empty) : actor.FullName;
+
+        if (role == "CLIENT")
+        {
+            dto.Priority = null;
+            dto.IsBlocking = false;
+            dto.FollowUpCount = 0;
+        }
 
         if (role is "SAV" or "ADMIN")
         {

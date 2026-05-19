@@ -41,9 +41,11 @@ export const priorityFromApi = {
 };
 
 export function toApiPriority(priority) {
-  return priorityToApi[priority] || 'MEDUIM';
+  if (priority === undefined || priority === null || priority === '') return undefined;
+  return priorityToApi[priority];
 }
 
 export function fromApiPriority(priority) {
-  return priorityFromApi[priority] || 'Medium';
+  if (priority === undefined || priority === null || priority === '') return undefined;
+  return priorityFromApi[priority];
 }

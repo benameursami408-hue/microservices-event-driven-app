@@ -29,11 +29,11 @@ public partial class ReclamationsService
         }
         else if (role == "SAV")
         {
-            var backlog = _reclamationRepository.GetOpenBacklog();
-            var mine = _reclamationRepository.GetForSav(actor.UserId);
-            items = backlog.Concat(mine)
-                .GroupBy(r => r.Id)
-                .Select(g => g.First())
+            items = _reclamationRepository.GetAll()
+                .Where(r => r.Status == ReclamationStatus.Open
+                    || r.ClaimedBySavId == actor.UserId
+                    || (r.ClaimedBySavId.HasValue && IsActiveForSavQueue(r))
+                    || r.SAVId == actor.UserId)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToList();
 

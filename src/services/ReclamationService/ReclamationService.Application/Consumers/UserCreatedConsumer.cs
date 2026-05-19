@@ -9,11 +9,16 @@ namespace ReclamationService.Application.Consumers
     public class UserCreatedConsumer : IConsumer<UserCreatedEvent>
     {
         private readonly IClientRepository _clientRepository;
+        private readonly IServiceUserRepository _serviceUserRepository;
         private readonly ILogger<UserCreatedConsumer> _logger;
 
-        public UserCreatedConsumer(IClientRepository clientRepository, ILogger<UserCreatedConsumer> logger)
+        public UserCreatedConsumer(
+            IClientRepository clientRepository,
+            IServiceUserRepository serviceUserRepository,
+            ILogger<UserCreatedConsumer> logger)
         {
             _clientRepository = clientRepository;
+            _serviceUserRepository = serviceUserRepository;
             _logger = logger;
         }
 
@@ -22,9 +27,18 @@ namespace ReclamationService.Application.Consumers
         var message = context.Message;
         _logger.LogInformation("Receiving UserCreatedEvent for UserId: {UserId}, Email: {Email}", message.UserId, message.Email);
 
+        _serviceUserRepository.Upsert(new ServiceUser
+        {
+            Id = message.UserId,
+            FullName = $"{message.FirstName} {message.LastName}".Trim(),
+            Email = message.Email,
+            Role = message.Role,
+            UpdatedAt = DateTime.UtcNow
+        });
+
         if (!string.Equals(message.Role, "CLIENT", StringComparison.OrdinalIgnoreCase))
         {
-            _logger.LogInformation("Skipping Client creation for non-client role: {Role}", message.Role);
+            _logger.LogInformation("Skipping Client creation for non-client role: {Role}; service user projection was updated.", message.Role);
             return Task.CompletedTask;
         }
 

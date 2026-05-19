@@ -96,6 +96,27 @@ public class ReclamationsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    [HttpPost("{id}/claim")]
+    public async Task<ActionResult<ReclamationDto>> Claim(long id, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.ClaimAsync(id, actor, cancellationToken));
+    }
+
+    [HttpPost("{id}/release")]
+    public async Task<ActionResult<ReclamationDto>> Release(long id, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.ReleaseAsync(id, actor, cancellationToken));
+    }
+
+    [HttpPost("{id}/reassign-sav")]
+    public async Task<ActionResult<ReclamationDto>> ReassignSav(long id, [FromBody] ReassignSavDto dto, CancellationToken cancellationToken)
+    {
+        var actor = User.ToCurrentUser(HttpContext);
+        return Ok(await _reclamationService.ReassignSavAsync(id, dto, actor, cancellationToken));
+    }
+
     [HttpPut("{id}")]
     public ActionResult<ReclamationDto> Update(long id, [FromBody] UpdateReclamationDto dto)
     {

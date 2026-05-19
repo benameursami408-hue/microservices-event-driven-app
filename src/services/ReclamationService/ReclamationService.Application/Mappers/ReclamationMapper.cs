@@ -1,5 +1,6 @@
 using ReclamationService.Application.DTOs;
 using ReclamationService.Domain.Entities;
+using ReclamationService.Domain.Enums;
 using System.Text.Json;
 
 namespace ReclamationService.Application.Mappers;
@@ -44,6 +45,11 @@ public static class ReclamationMapper
             SavId = reclamation.SAVId,
             SavName = reclamation.SAVName,
             AssignedAt = reclamation.AssignedAt,
+            ClaimedBySavId = reclamation.ClaimedBySavId,
+            ClaimedBySavName = reclamation.ClaimedBySavName,
+            ClaimedAt = reclamation.ClaimedAt,
+            ReleasedAt = reclamation.ReleasedAt,
+            IsClaimed = reclamation.ClaimedBySavId.HasValue,
             TechnicianId = reclamation.TechnicianId,
             TechnicianName = reclamation.TechnicianName,
             PlannedStartAt = reclamation.PlannedStartAt,
@@ -51,6 +57,7 @@ public static class ReclamationMapper
             NextAppointmentAt = reclamation.PlannedStartAt,
             NextAppointmentEndAt = reclamation.PlannedEndAt,
             PlanningNote = reclamation.PlanningNote,
+            PlanningRequestedAt = reclamation.PlanningRequestedAt,
             RequiresReplanning = reclamation.RequiresReplanning,
             LastInterventionOutcome = reclamation.LastInterventionOutcome,
             LastInterventionReportSummary = reclamation.LastInterventionReportSummary,
@@ -80,18 +87,29 @@ public static class ReclamationMapper
             return null!;
         }
 
+        var hasPriority = dto.Priority.HasValue;
+        var priority = dto.Priority ?? NamePriority.LOW;
+        var priorityReason = hasPriority
+            ? "Priority selected by SAV/Admin at creation."
+            : "Priority not selected by client; awaiting AI/SAV review.";
+
         return new Reclamation
         {
             Reference = GenerateReference(),
             Description = string.IsNullOrWhiteSpace(dto.Description) ? "No description provided." : dto.Description.Trim(),
-            Priority = dto.Priority,
-            Severity = dto.Priority,
+            Priority = priority,
+            Severity = priority,
             Status = ReclamationService.Domain.Enums.ReclamationStatus.Open,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             ClientId = clientId,
             ClientName = clientName,
-            PriorityUpdatedAt = DateTime.UtcNow,
+            PriorityScore = 0,
+            PriorityReasons = JsonSerializer.Serialize(new[] { priorityReason }),
+            PrioritySource = hasPriority ? PrioritySource.ManualOverride : PrioritySource.PendingReview,
+            PriorityUpdatedAt = hasPriority ? DateTime.UtcNow : null,
+            ManualPriorityOverride = hasPriority,
+            ManualPriorityOverrideReason = hasPriority ? priorityReason : null,
             IsBlocking = dto.IsBlocking,
             FollowUpCount = dto.FollowUpCount,
             ProductName = dto.ProductName,

@@ -10,6 +10,7 @@ public class ReclamationStatsDto
     public List<CategoryCountDto> ByCategory { get; set; } = new();
     public List<TrendPointDto> Trend { get; set; } = new();
     public List<LatestReclamationDto> Latest { get; set; } = new();
+    public List<SavWorkloadDto> WorkloadBySav { get; set; } = new();
 }
 
 public class ReclamationKpiDto
@@ -59,5 +60,16 @@ public class LatestReclamationDto
     public string ClientName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public string? SavName { get; set; }
+    public long? ClaimedBySavId { get; set; }
+    public string? ClaimedBySavName { get; set; }
+    public DateTime? ClaimedAt { get; set; }
     public string? TechnicianName { get; set; }
+}
+
+public class SavWorkloadDto
+{
+    public long SavId { get; set; }
+    public string SavName { get; set; } = string.Empty;
+    public int ActiveClaimedCount { get; set; }
+    public int UrgentOrHighCount { get; set; }
 }

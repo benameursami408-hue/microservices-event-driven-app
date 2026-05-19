@@ -147,6 +147,16 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ClaimedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("ClaimedBySavId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ClaimedBySavName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -195,6 +205,9 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<string>("PlanningNote")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("PlanningRequestedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("Priority")
                         .HasColumnType("int");
@@ -256,6 +269,9 @@ namespace ReclamationService.Infrastructure.Migrations
                     b.Property<DateTime?>("ResolvedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ReleasedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<long?>("SAVId")
                         .HasColumnType("bigint");
 
@@ -295,7 +311,39 @@ namespace ReclamationService.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClaimedBySavId");
+
                     b.ToTable("Reclamations");
+                });
+
+            modelBuilder.Entity("ReclamationService.Domain.Entities.ServiceUser", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Role");
+
+                    b.ToTable("ServiceUsers");
                 });
 
             modelBuilder.Entity("ReclamationService.Domain.Entities.ReclamationHistory", b =>

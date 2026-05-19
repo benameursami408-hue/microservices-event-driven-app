@@ -185,7 +185,6 @@ export function ClientPortalPage({ user, notify, navigate, mode = 'home' }) {
             columns={[
               { key: 'id', label: 'Reference' },
               { key: 'product', label: 'Product' },
-              { key: 'priority', label: 'Priority', render: row => <Badge>{row.priority}</Badge> },
               { key: 'status', label: 'Status', render: row => <Badge>{row.status}</Badge> },
               { key: 'createdShort', label: 'Created' }
             ]}
@@ -303,7 +302,7 @@ function RequestDetails({ request }) {
         <h2>{request.product}</h2>
         <p>{request.description}</p>
         <div className="client-detail-meta">
-          <span><small>Priority</small><Badge>{request.priority}</Badge></span>
+          <span><small>Review</small><strong>Priority is reviewed by SAV</strong></span>
           <span><small>SLA</small><strong>{request.sla}</strong></span>
           <span><small>Created</small><strong>{request.createdShort || '-'}</strong></span>
         </div>
