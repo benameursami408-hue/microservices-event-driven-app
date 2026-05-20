@@ -23,4 +23,16 @@ public class ReclamationStatsController : ControllerBase
         var result = await _statsService.GetStatsAsync(days, latest);
         return Ok(result);
     }
+
+    [HttpGet("/api/reclamations/admin/statistics")]
+    public async Task<ActionResult<GlobalReclamationStatsDto>> GetAdminStatistics([FromQuery] int days = 30)
+    {
+        return Ok(await _statsService.GetGlobalStatisticsAsync(days));
+    }
+
+    [HttpGet("/api/reclamations/admin/statistics/sav-agents")]
+    public async Task<ActionResult<List<SavAgentStatsDto>>> GetSavAgentStatistics()
+    {
+        return Ok(await _statsService.GetSavAgentStatisticsAsync());
+    }
 }

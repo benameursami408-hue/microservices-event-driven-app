@@ -23,6 +23,10 @@ export async function updateUser(id, payload) {
   }));
 }
 
+export async function setUserActive(id, payload, isActive) {
+  return updateUser(id, { ...payload, isActive });
+}
+
 export async function deleteUser(id) {
   return apiRequest(`/api/admin/users/${id}`, { method: 'DELETE' });
 }

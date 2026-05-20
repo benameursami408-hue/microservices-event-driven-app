@@ -1,5 +1,18 @@
 import { AlertTriangle, ArrowRight, BarChart3, CalendarDays, ClipboardList, FileText, Loader2, Wrench } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import {
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import { ApiErrorState } from '../components/common/ApiErrorState';
 import { Avatar, Badge, Button, Card, DataTable, NotificationItem, StatCard } from '../components/ui';
 import { useDashboard } from '../hooks/useDashboard';
@@ -21,6 +34,42 @@ const statusOrder = [
 ];
 const chartRanges = { week: 7, month: 4, year: 12 };
 const chartRangeLabels = { week: 'This Week', month: 'This Month', year: 'This Year' };
+const RADIAN = Math.PI / 180;
+
+function formatPercent(value) {
+  return `${Number(value || 0).toFixed(1)}%`;
+}
+
+function withStatusPercentages(rows = []) {
+  const total = rows.reduce((sum, item) => sum + Number(item.value || 0), 0);
+  return rows.map(item => ({
+    ...item,
+    name: item.label,
+    percentValue: total ? Number(item.value || 0) * 100 / total : 0
+  }));
+}
+
+function renderStatusPieLabel({ cx, cy, midAngle, outerRadius, value, percentValue }) {
+  if (!value || percentValue < 5) return null;
+  const radius = outerRadius + 18;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text x={x} y={y} fill="#334155" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight={700}>
+      {value} ({formatPercent(percentValue)})
+    </text>
+  );
+}
+
+function formatStatusTooltip(value, name, props) {
+  return [`${value} (${formatPercent(props?.payload?.percentValue)})`, name];
+}
+
+function formatStatusLegend(value, entry) {
+  const payload = entry?.payload || {};
+  return `${value}: ${payload.value || 0} (${formatPercent(payload.percentValue)})`;
+}
 
 export function DashboardPage({ user, navigate, notify }) {
   const technicianMode = isTechnician(user);
@@ -92,22 +141,13 @@ export function DashboardPage({ user, navigate, notify }) {
   }, [chartRange, reclamations.length, interventions.length]);
 
   const chartMax = Math.max(...chartData.flatMap(item => [item.reclamations, item.interventions]), 1);
-  const point = (item, index, key) => {
-    const x = (index / Math.max(chartData.length - 1, 1)) * 100;
-    const y = 96 - (item[key] / chartMax) * 84;
-    return { x, y };
-  };
-  const recPoints = chartData.map((item, index) => point(item, index, 'reclamations'));
-  const intPoints = chartData.map((item, index) => point(item, index, 'interventions'));
-  const recPointString = recPoints.map(item => `${item.x},${item.y}`).join(' ');
-  const intPointString = intPoints.map(item => `${item.x},${item.y}`).join(' ');
+  const chartDomainMax = Math.max(10, Math.ceil(chartMax / 10) * 10);
 
-  const breakdown = statusOrder.map(item => ({
+  const breakdown = withStatusPercentages(statusOrder.map(item => ({
     ...item,
     value: reclamations.filter(row => item.includes.includes(row.status)).length
-  }));
-  const totalReclamations = Math.max(1, reclamations.length);
-  const donutGradient = buildDonutGradient(breakdown, totalReclamations);
+  })));
+  const totalReclamations = breakdown.reduce((sum, item) => sum + item.value, 0);
   const upcomingAppointments = appointments.slice(0, 3).map(item => ({ time: item.start, client: item.client, technician: item.technicianName, ref: item.reclamationId, type: item.product, status: item.status }));
   const loadError = dashboard.error || reclamationResource.error || planning.error || interventionResource.error || notificationsResource.error;
   const loadErrorStatus = dashboard.errorStatus || reclamationResource.errorStatus || planning.errorStatus || interventionResource.errorStatus || notificationsResource.errorStatus;
@@ -145,46 +185,47 @@ export function DashboardPage({ user, navigate, notify }) {
 
       <div className="dashboard-main-grid">
         <Card title="Activity Overview" icon={BarChart3} className="chart-card activity-overview-card" actions={<label className="chart-period-select"><select aria-label="Activity range" value={chartRange} onChange={event => { setChartRange(event.target.value); notify(`Activity range set to ${event.target.value}`); }}>{Object.entries(chartRangeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}>
-          <div className="chart-legend"><span><i className="legend-dot blue" />Reclamations</span><span><i className="legend-dot teal" />Interventions</span></div>
-          <div className="line-chart enhanced-chart">
-            <div className="chart-axis">{[chartMax, Math.round(chartMax * 0.75), Math.round(chartMax * 0.5), Math.round(chartMax * 0.25), 0].map(value => <span key={value}>{value}</span>)}</div>
-            <svg viewBox="-2 0 104 106" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="rec-area" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#1167ff" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#1167ff" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="int-area" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#22a6b8" stopOpacity="0.16" />
-                  <stop offset="100%" stopColor="#22a6b8" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[12, 33, 54, 75, 96].map(value => <line key={value} x1="0" x2="100" y1={value} y2={value} />)}
-              <polygon points={`0,102 ${recPointString} 100,102`} className="area-blue" />
-              <polygon points={`0,102 ${intPointString} 100,102`} className="area-teal" />
-              <polyline points={recPointString} className="line-blue" />
-              <polyline points={intPointString} className="line-teal" />
-              {recPoints.map((item, index) => <circle key={`rec-${chartData[index].label}`} cx={item.x} cy={item.y} r="1.8" className="point-blue" />)}
-              {intPoints.map((item, index) => <circle key={`int-${chartData[index].label}`} cx={item.x} cy={item.y} r="1.8" className="point-teal" />)}
-            </svg>
-            <div className="month-axis" style={{ gridTemplateColumns: `repeat(${chartData.length}, 1fr)` }}>{chartData.map(item => <span key={item.label}>{item.label}</span>)}</div>
+          <div className="activity-chart-shell">
+            <ResponsiveContainer width="100%" height={276}>
+              <LineChart data={chartData} margin={{ top: 12, right: 22, left: 2, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} domain={[0, chartDomainMax]} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(value, name) => [value, name === 'reclamations' ? 'Reclamations' : 'Interventions']} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12, fontWeight: 700 }} />
+                <Line type="monotone" dataKey="reclamations" name="Reclamations" stroke="#1167ff" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="interventions" name="Interventions" stroke="#11b7a5" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
         <Card title="Reclamation Status" icon={Wrench} className="donut-card">
-          <div className="donut-layout">
-            <div className="donut-chart" style={{ '--donut-bg': donutGradient }}>
-              <div><strong>{reclamations.length}</strong><span>Total</span></div>
-            </div>
-            <div className="donut-legend">
-              {breakdown.map(item => (
-                <div className="donut-legend-item" key={item.label} style={{ '--status-color': item.color }}>
-                  <span><i />{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small>{((item.value / totalReclamations) * 100).toFixed(1)}%</small>
-                </div>
-              ))}
-            </div>
+          <div className="dashboard-status-chart">
+            <ResponsiveContainer width="100%" height={276}>
+              <PieChart>
+                <Pie
+                  data={breakdown}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={78}
+                  paddingAngle={2}
+                  label={renderStatusPieLabel}
+                  labelLine={false}
+                  isAnimationActive
+                  animationBegin={120}
+                  animationDuration={900}
+                  animationEasing="ease-out"
+                >
+                  {breakdown.map(item => <Cell key={item.label} fill={item.color} />)}
+                </Pie>
+                <Tooltip formatter={formatStatusTooltip} />
+                <Legend formatter={formatStatusLegend} iconType="square" wrapperStyle={{ fontSize: 12, fontWeight: 700 }} />
+                <text x="50%" y="43%" textAnchor="middle" dominantBaseline="central" className="dashboard-status-total">{totalReclamations}</text>
+                <text x="50%" y="53%" textAnchor="middle" dominantBaseline="central" className="dashboard-status-caption">Total</text>
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
@@ -284,19 +325,6 @@ function trendFromSpark(values) {
     trend: `${percent}% ${delta >= 0 ? 'higher' : 'lower'} than last week`,
     trendTone: delta >= 0 ? 'up' : 'down'
   };
-}
-
-function buildDonutGradient(items, total) {
-  const sum = items.reduce((acc, item) => acc + item.value, 0);
-  if (!sum) return 'conic-gradient(#e2e8f0 0% 100%)';
-  let cursor = 0;
-  const segments = items.map(item => {
-    const start = cursor;
-    const size = total ? (item.value / total) * 100 : 0;
-    cursor += size;
-    return `${item.color} ${start}% ${cursor}%`;
-  });
-  return `conic-gradient(${segments.join(', ') || '#e2e8f0 0% 100%'})`;
 }
 
 function formatDate(value) {

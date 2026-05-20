@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ClientPortalLayout } from './components/layout/ClientPortalLayout';
@@ -22,8 +22,11 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
 import { canAccessBackOfficeRoute, canAccessDashboardSummary } from './utils/roleAccess';
 
+const AdminStatistiquePage = lazy(() => import('./pages/AdminStatistiquePage').then(module => ({ default: module.AdminStatistiquePage })));
+
 const backOfficePaths = {
   dashboard: '/dashboard',
+  statistique: '/statistique',
   reclamations: '/reclamations',
   clients: '/clients',
   planning: '/planning',
@@ -106,6 +109,8 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to={user ? getHomePath(user) : '/login'} replace />} />
 
         <Route path="/dashboard" element={<BackOfficeFrame user={user} counts={counts} activePage="dashboard" onNavigate={navigateById} onLogout={handleLogout}><DashboardPage {...shared} /></BackOfficeFrame>} />
+        <Route path="/statistique" element={<BackOfficeFrame user={user} counts={counts} activePage="statistique" onNavigate={navigateById} onLogout={handleLogout}><Suspense fallback={<div className="page-loader">Chargement des statistiques...</div>}><AdminStatistiquePage {...shared} /></Suspense></BackOfficeFrame>} />
+        <Route path="/app/admin/statistique" element={<BackOfficeFrame user={user} counts={counts} activePage="statistique" onNavigate={navigateById} onLogout={handleLogout}><Suspense fallback={<div className="page-loader">Chargement des statistiques...</div>}><AdminStatistiquePage {...shared} /></Suspense></BackOfficeFrame>} />
         <Route path="/reclamations" element={<BackOfficeFrame user={user} counts={counts} activePage="reclamations" onNavigate={navigateById} onLogout={handleLogout}><ReclamationsPage {...shared} /></BackOfficeFrame>} />
         <Route path="/planning" element={<BackOfficeFrame user={user} counts={counts} activePage="planning" onNavigate={navigateById} onLogout={handleLogout}><PlanningPage {...shared} /></BackOfficeFrame>} />
         <Route path="/interventions" element={<BackOfficeFrame user={user} counts={counts} activePage="interventions" onNavigate={navigateById} onLogout={handleLogout}><InterventionsPage {...shared} /></BackOfficeFrame>} />

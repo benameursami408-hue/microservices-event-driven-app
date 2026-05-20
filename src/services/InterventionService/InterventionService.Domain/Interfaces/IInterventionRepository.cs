@@ -4,6 +4,7 @@ namespace InterventionService.Domain.Interfaces;
 
 public interface IInterventionRepository
 {
+    IQueryable<Intervention> Query();
     Task<Intervention?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Intervention?> GetByAppointmentIdAsync(Guid appointmentId, CancellationToken cancellationToken = default);
     Task<List<Intervention>> QueryAsync(long? reclamationId = null, long? technicianId = null, CancellationToken cancellationToken = default);

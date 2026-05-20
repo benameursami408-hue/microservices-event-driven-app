@@ -14,6 +14,11 @@ public class InterventionRepository : IInterventionRepository
         _dbContext = dbContext;
     }
 
+    public IQueryable<Intervention> Query()
+    {
+        return _dbContext.Interventions.AsNoTracking();
+    }
+
     public Task<Intervention?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return _dbContext.Interventions

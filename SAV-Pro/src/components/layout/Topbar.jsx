@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Bell,
+  BarChart3,
   CalendarDays,
   ChevronDown,
   ClipboardList,
@@ -18,6 +19,7 @@ import { canAccessBackOfficeRoute } from '../../utils/roleAccess';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'statistique', label: 'Statistique', icon: BarChart3 },
   { id: 'reclamations', label: 'Reclamations', icon: ClipboardList },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'planning', label: 'Planning', icon: CalendarDays },

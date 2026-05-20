@@ -152,6 +152,7 @@ builder.Services.AddScoped<PlanningCapacityService>();
 builder.Services.AddScoped<PlanningService>();
 builder.Services.AddScoped<RealisationService>();
 builder.Services.AddScoped<VisitReportsService>();
+builder.Services.AddScoped<AdminInterventionStatsService>();
 builder.Services.AddHostedService<OutboxDispatcher>();
 
 var app = builder.Build();

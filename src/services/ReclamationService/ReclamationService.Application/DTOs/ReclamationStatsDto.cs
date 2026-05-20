@@ -73,3 +73,27 @@ public class SavWorkloadDto
     public int ActiveClaimedCount { get; set; }
     public int UrgentOrHighCount { get; set; }
 }
+
+public class GlobalReclamationStatsDto
+{
+    public int TotalReclamations { get; set; }
+    public int OpenReclamations { get; set; }
+    public int InProgressReclamations { get; set; }
+    public int ResolvedReclamations { get; set; }
+    public int ClosedReclamations { get; set; }
+    public List<StatusCountDto> ByStatus { get; set; } = new();
+    public List<TrendPointDto> Trend { get; set; } = new();
+}
+
+public class SavAgentStatsDto
+{
+    public long UserId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public int AssignedCount { get; set; }
+    public int HandledCount { get; set; }
+    public int ResolvedCount { get; set; }
+    public int ClosedCount { get; set; }
+    public decimal ResolutionRate { get; set; }
+    public DateTime? LastActivityAt { get; set; }
+}

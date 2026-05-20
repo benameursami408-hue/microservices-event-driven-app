@@ -259,6 +259,7 @@ export function InterventionsPage({ user, notify, navigate }) {
 
       {reportModal ? (
         <Modal
+          className="form-modal-card intervention-report-modal-card"
           title={`Terminer ${reportModal.reference}`}
           onClose={() => setReportModal(null)}
           footer={<Button variant="primary" icon={CheckCircle} onClick={handleComplete}>Valider la fin d’intervention</Button>}

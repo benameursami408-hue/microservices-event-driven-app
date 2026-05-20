@@ -48,6 +48,10 @@ export function canAccessDashboardSummary(user) {
   return isAdmin(user) || isSav(user);
 }
 
+export function canAccessStatistics(user) {
+  return isAdmin(user);
+}
+
 export function canAccessClients(user) {
   return isAdmin(user) || isSav(user);
 }
@@ -101,6 +105,7 @@ export function getDefaultBackOfficePath(user) {
 export function canAccessBackOfficeRoute(user, routeId) {
   const checks = {
     dashboard: canAccessDashboard,
+    statistique: canAccessStatistics,
     reclamations: canAccessReclamations,
     clients: canAccessClients,
     planning: canAccessPlanningRequests,

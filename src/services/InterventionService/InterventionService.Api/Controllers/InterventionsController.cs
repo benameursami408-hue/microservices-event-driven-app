@@ -12,10 +12,12 @@ namespace InterventionService.Api.Controllers;
 public class InterventionsController : ControllerBase
 {
     private readonly RealisationService _realisationService;
+    private readonly AdminInterventionStatsService _adminStatsService;
 
-    public InterventionsController(RealisationService realisationService)
+    public InterventionsController(RealisationService realisationService, AdminInterventionStatsService adminStatsService)
     {
         _realisationService = realisationService;
+        _adminStatsService = adminStatsService;
     }
 
     [HttpGet]
@@ -24,6 +26,20 @@ public class InterventionsController : ControllerBase
     {
         var actor = User.ToCurrentUser(HttpContext);
         return Ok(await _realisationService.QueryInterventionsAsync(actor, reclamationId, technicianId, cancellationToken));
+    }
+
+    [HttpGet("admin/statistics")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<GlobalInterventionStatsDto>> GetAdminStatistics()
+    {
+        return Ok(await _adminStatsService.GetGlobalStatisticsAsync());
+    }
+
+    [HttpGet("admin/statistics/technicians")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<List<TechnicianStatsDto>>> GetTechnicianStatistics()
+    {
+        return Ok(await _adminStatsService.GetTechnicianStatisticsAsync());
     }
 
     [HttpGet("my")]

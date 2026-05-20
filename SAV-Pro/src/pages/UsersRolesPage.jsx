@@ -15,6 +15,7 @@ export function UsersRolesPage({ user, notify }) {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyUser);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [togglingUserId, setTogglingUserId] = useState(null);
   const userResource = useUsers(role === 'All' ? undefined : role);
   const users = userResource.users;
   const visibleUsers = useMemo(
@@ -62,6 +63,27 @@ export function UsersRolesPage({ user, notify }) {
       notify('User deleted in backend');
     } catch (err) {
       notify(getFriendlyApiError(err), 'error');
+    }
+  }
+
+  async function toggleUserStatus(row) {
+    if (!allowManageUsers) {
+      notify("Cette action est reservee a l'administrateur.", 'error');
+      return;
+    }
+
+    const userId = row.technicalId || row.id;
+    if (!userId) return;
+
+    setTogglingUserId(userId);
+    try {
+      const nextIsActive = !row.isActive;
+      await userResource.setActive(userId, row, nextIsActive);
+      notify(nextIsActive ? 'User enabled in backend' : 'User disabled in backend');
+    } catch (err) {
+      notify(getFriendlyApiError(err), 'error');
+    } finally {
+      setTogglingUserId(null);
     }
   }
 
@@ -124,7 +146,8 @@ export function UsersRolesPage({ user, notify }) {
                     <Button
                       size="sm"
                       icon={row.isActive ? ToggleRight : ToggleLeft}
-                      onClick={() => notify('Use Edit to change status when backend DTO supports it')}
+                      onClick={() => toggleUserStatus(row)}
+                      disabled={togglingUserId === (row.technicalId || row.id)}
                     >
                       {row.isActive ? 'Disable' : 'Enable'}
                     </Button>

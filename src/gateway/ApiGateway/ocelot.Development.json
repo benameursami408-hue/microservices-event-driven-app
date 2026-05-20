@@ -58,6 +58,51 @@
       ]
     },
     {
+      "UpstreamPathTemplate": "/api/reclamations/admin/statistics/sav-agents",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/reclamations/admin/statistics/sav-agents",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5057
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/reclamations/admin/statistics/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/reclamations/admin/statistics/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5057
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/reclamations/admin/statistics",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/reclamations/admin/statistics",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5057
+        }
+      ]
+    },
+    {
       "UpstreamPathTemplate": "/api/reclamations/{catchAll}",
       "UpstreamHttpMethod": [
         "Get",
@@ -140,6 +185,51 @@
         "Options"
       ],
       "DownstreamPathTemplate": "/api/interventions",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5104
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/interventions/admin/statistics/technicians",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/interventions/admin/statistics/technicians",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5104
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/interventions/admin/statistics/{catchAll}",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/interventions/admin/statistics/{catchAll}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5104
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/api/interventions/admin/statistics",
+      "UpstreamHttpMethod": [
+        "Get",
+        "Options"
+      ],
+      "DownstreamPathTemplate": "/api/interventions/admin/statistics",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {

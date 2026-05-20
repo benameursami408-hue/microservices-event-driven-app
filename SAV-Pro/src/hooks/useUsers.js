@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { createUser, deleteUser, listUsers, updateUser } from '../api/usersApi';
+import { createUser, deleteUser, listUsers, setUserActive, updateUser } from '../api/usersApi';
 import { useApiResource } from './useApiResource';
 
 export function useUsers(role, enabled = true) {
@@ -20,6 +20,7 @@ export function useUsers(role, enabled = true) {
     reload: resource.reload,
     create: payload => mutate(() => createUser(payload)),
     update: (id, payload) => mutate(() => updateUser(id, payload)),
+    setActive: (id, payload, isActive) => mutate(() => setUserActive(id, payload, isActive)),
     remove: id => mutate(() => deleteUser(id))
   };
 }

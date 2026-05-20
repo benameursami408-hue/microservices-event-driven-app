@@ -232,6 +232,31 @@
   border: 1px solid #b8d5ff;
 }
 
+.badge-admin {
+  color: #073b91;
+  background: #eaf2ff;
+  border: 1px solid #b8d5ff;
+}
+
+.badge-sav {
+  color: #067264;
+  background: #e4faf3;
+  border: 1px solid #b9efd8;
+}
+
+.badge-technician,
+.badge-st {
+  color: #5b21b6;
+  background: #f2eaff;
+  border: 1px solid #d9c6ff;
+}
+
+.badge-client {
+  color: #a94a00;
+  background: #fff0df;
+  border: 1px solid #ffd8b4;
+}
+
 .badge-assigned {
   color: #7b3ce8;
   background: #efe4ff;
