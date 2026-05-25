@@ -21,16 +21,52 @@ export function getApiBaseUrl() {
   return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(/\/$/, '');
 }
 
+function isAbsoluteUrl(value) {
+  return /^https?:\/\//i.test(value);
+}
+
+function trimTrailingSlash(value) {
+  return String(value || '').replace(/\/$/, '');
+}
+
+function normalizeApiPath(baseUrl, path) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (trimTrailingSlash(baseUrl).endsWith('/api') && normalizedPath.startsWith('/api/')) {
+    return normalizedPath.slice(4);
+  }
+
+  return normalizedPath;
+}
+
 function buildUrl(path, query) {
-  const url = new URL(`${getApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`);
+  const baseUrl = trimTrailingSlash(getApiBaseUrl());
+  const normalizedPath = normalizeApiPath(baseUrl, path);
+  const rawUrl = `${baseUrl}${normalizedPath}` || normalizedPath;
+
+  if (isAbsoluteUrl(rawUrl)) {
+    const url = new URL(rawUrl);
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          url.searchParams.set(key, value);
+        }
+      });
+    }
+    return url.toString();
+  }
+
+  const searchParams = new URLSearchParams();
   if (query) {
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        url.searchParams.set(key, value);
+        searchParams.set(key, value);
       }
     });
   }
-  return url.toString();
+
+  const queryString = searchParams.toString();
+  return queryString ? `${rawUrl}?${queryString}` : rawUrl;
 }
 
 async function parseResponse(response) {

@@ -138,6 +138,7 @@ textarea {
 :root[data-theme="dark"] .admin-nav-links button,
 :root[data-theme="dark"] .topbar-user,
 :root[data-theme="dark"] .settings-field,
+:root[data-theme="dark"] .settings-section-head strong,
 :root[data-theme="dark"] .settings-toggle-row strong,
 :root[data-theme="dark"] .settings-info-item strong,
 :root[data-theme="dark"] .settings-profile strong,
@@ -148,6 +149,7 @@ textarea {
 
 :root[data-theme="dark"] .settings-info-item,
 :root[data-theme="dark"] .settings-profile,
+:root[data-theme="dark"] .settings-section,
 :root[data-theme="dark"] .client-contact-item,
 :root[data-theme="dark"] .client-snapshot-grid .info-pair,
 :root[data-theme="dark"] .donut-legend-item,
@@ -161,6 +163,8 @@ textarea {
 
 :root[data-theme="dark"] .settings-info-item span,
 :root[data-theme="dark"] .settings-profile span,
+:root[data-theme="dark"] .settings-profile small,
+:root[data-theme="dark"] .settings-section-head p,
 :root[data-theme="dark"] .settings-toggle-row p,
 :root[data-theme="dark"] .settings-card-copy {
   color: var(--muted);

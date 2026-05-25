@@ -1,0 +1,483 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: sav-pro
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: sav-pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: sav-auth-service:local
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Database__AutoMigrate
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: DATABASE_AUTO_MIGRATE
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SA_PASSWORD
+            - name: ConnectionStrings__DBConnection
+              value: "Server=sqlserver;Database=AuthDB;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;Encrypt=False"
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_ISSUER
+            - name: Jwt__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_AUDIENCE
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: JWT_SECRET
+            - name: Seed__Enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ENABLED
+            - name: Seed__DemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_DEMO_DATA
+            - name: Seed__ResetDemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: RESET_DEMO_DATA
+            - name: Seed__AdminEmail
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ADMIN_EMAIL
+            - name: Seed__AdminPassword
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SEED_ADMIN_PASSWORD
+            - name: Seed__AdminFirstName
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ADMIN_FIRSTNAME
+            - name: Seed__AdminLastName
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ADMIN_LASTNAME
+            - name: Seed__AdminPhoneNumber
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ADMIN_PHONE
+            - name: RabbitMQ__Host
+              value: "rabbitmq"
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_PASS
+            - name: Security__AuthRateLimit__PermitLimit
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: AUTH_RATE_LIMIT_PER_MINUTE
+            - name: Security__AuthRateLimit__WindowSeconds
+              value: "60"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reclamation-service
+  namespace: sav-pro
+spec:
+  type: ClusterIP
+  selector:
+    app: reclamation-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reclamation-service
+  namespace: sav-pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reclamation-service
+  template:
+    metadata:
+      labels:
+        app: reclamation-service
+    spec:
+      containers:
+        - name: reclamation-service
+          image: sav-reclamation-service:local
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Database__AutoMigrate
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: DATABASE_AUTO_MIGRATE
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SA_PASSWORD
+            - name: ConnectionStrings__DBConnection
+              value: "Server=sqlserver;Database=ReclamationDB;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;Encrypt=False"
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_ISSUER
+            - name: Jwt__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_AUDIENCE
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: JWT_SECRET
+            - name: Seed__Enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ENABLED
+            - name: Seed__DemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_DEMO_DATA
+            - name: Seed__ResetDemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: RESET_DEMO_DATA
+            - name: RabbitMQ__Host
+              value: "rabbitmq"
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_PASS
+            - name: Security__UploadRateLimit__PermitLimit
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: UPLOAD_RATE_LIMIT_PER_MINUTE
+            - name: Security__UploadRateLimit__WindowSeconds
+              value: "60"
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: sav-pro
+spec:
+  type: ClusterIP
+  selector:
+    app: notification-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: sav-pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: sav-notification-service:local
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Database__AutoMigrate
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: DATABASE_AUTO_MIGRATE
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SA_PASSWORD
+            - name: ConnectionStrings__DBConnection
+              value: "Server=sqlserver;Database=NotificationDB;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;Encrypt=False"
+            - name: Notifications__AdminEmail
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: NOTIFICATIONS_ADMIN_EMAIL
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_ISSUER
+            - name: Jwt__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_AUDIENCE
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: JWT_SECRET
+            - name: Seed__Enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ENABLED
+            - name: Seed__DemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_DEMO_DATA
+            - name: Seed__ResetDemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: RESET_DEMO_DATA
+            - name: RabbitMQ__Host
+              value: "rabbitmq"
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_PASS
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: intervention-service
+  namespace: sav-pro
+spec:
+  type: ClusterIP
+  selector:
+    app: intervention-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: intervention-service
+  namespace: sav-pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: intervention-service
+  template:
+    metadata:
+      labels:
+        app: intervention-service
+    spec:
+      containers:
+        - name: intervention-service
+          image: sav-intervention-service:local
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: ASPNETCORE_ENVIRONMENT
+            - name: Database__AutoMigrate
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: DATABASE_AUTO_MIGRATE
+            - name: SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SA_PASSWORD
+            - name: ConnectionStrings__DBConnection
+              value: "Server=sqlserver;Database=InterventionDB;User Id=sa;Password=$(SA_PASSWORD);TrustServerCertificate=True;Encrypt=False"
+            - name: Jwt__Issuer
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_ISSUER
+            - name: Jwt__Audience
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: JWT_AUDIENCE
+            - name: Jwt__SecretKey
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: JWT_SECRET
+            - name: Seed__Enabled
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_ENABLED
+            - name: Seed__DemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: SEED_DEMO_DATA
+            - name: Seed__ResetDemoData
+              valueFrom:
+                configMapKeyRef:
+                  name: sav-config
+                  key: RESET_DEMO_DATA
+            - name: RabbitMQ__Host
+              value: "rabbitmq"
+            - name: RabbitMQ__Username
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_USER
+            - name: RabbitMQ__Password
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: RABBITMQ_PASS
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6

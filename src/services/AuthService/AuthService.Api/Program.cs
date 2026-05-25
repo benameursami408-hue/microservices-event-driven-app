@@ -19,13 +19,17 @@ using Microsoft.AspNetCore.Mvc;
 using AuthService.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
 const string localDevelopmentUrl = "http://localhost:5165";
+
 var requestedUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")
     ?? builder.Configuration["urls"];
+
 var isRunningInContainer = string.Equals(
     Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"),
     "true",
     StringComparison.OrdinalIgnoreCase);
+
 string? localUrlOverrideReason = null;
 
 if (!isRunningInContainer)
@@ -63,7 +67,6 @@ builder.Services.AddMassTransit(x =>
     });
 });
 
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -90,8 +93,10 @@ builder.Services.AddControllers()
             });
         };
     });
+
 builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -122,7 +127,6 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddExceptionHandler<AuthService.Api.Infrastructure.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
-
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -160,6 +164,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 {
                     context.Token = cookieToken;
                 }
+
                 return Task.CompletedTask;
             }
         };
@@ -191,9 +196,11 @@ builder.Services.AddCors(options =>
 
 var authRateLimitPermit = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:PermitLimit") ?? 10;
 var authRateLimitWindowSeconds = builder.Configuration.GetValue<int?>("Security:AuthRateLimit:WindowSeconds") ?? 60;
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
     options.AddPolicy("AuthSensitive", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
@@ -206,8 +213,8 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
-
 var jwtSecret = builder.Configuration["Jwt:SecretKey"];
+
 if (!builder.Environment.IsDevelopment()
     && (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Contains("ChangeThis", StringComparison.OrdinalIgnoreCase)))
 {
@@ -230,7 +237,8 @@ if (localUrlOverrideReason is not null)
 
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+// Swagger enabled for local Development and Docker environment
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -242,16 +250,28 @@ if (!app.Environment.IsEnvironment("Docker"))
 }
 
 app.UseRateLimiter();
+
 app.UseCors("AllowSavProFrontend");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
-app.MapGet("/health/live", () => Results.Ok(new { status = "Live", service = "AuthService" })).AllowAnonymous();
-app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration configuration, CancellationToken cancellationToken) =>
+
+app.MapGet("/health/live", () => Results.Ok(new
+{
+    status = "Live",
+    service = "AuthService"
+})).AllowAnonymous();
+
+app.MapGet("/health/ready", async (
+    AppDbContext dbContext,
+    IConfiguration configuration,
+    CancellationToken cancellationToken) =>
 {
     var sqlHealthy = false;
     string? sqlError = null;
+
     try
     {
         sqlHealthy = await dbContext.Database.CanConnectAsync(cancellationToken);
@@ -264,6 +284,7 @@ app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration config
     var rabbitHostConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Host"]);
     var rabbitUserConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Username"]);
     var rabbitPasswordConfigured = !string.IsNullOrWhiteSpace(configuration["RabbitMQ:Password"]);
+
     var ready = sqlHealthy && rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured;
 
     var response = new
@@ -274,13 +295,16 @@ app.MapGet("/health/ready", async (AppDbContext dbContext, IConfiguration config
         {
             sqlServer = sqlHealthy ? "Healthy" : "Unhealthy",
             sqlError,
-            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured ? "Configured" : "MissingConfiguration"
+            rabbitMqConfiguration = rabbitHostConfigured && rabbitUserConfigured && rabbitPasswordConfigured
+                ? "Configured"
+                : "MissingConfiguration"
         }
     };
 
     IResult result = ready
         ? Results.Ok(response)
         : Results.Json(response, statusCode: StatusCodes.Status503ServiceUnavailable);
+
     return result;
 }).AllowAnonymous();
 
@@ -311,17 +335,24 @@ if (app.Configuration.GetValue<bool>("Database:AutoMigrate"))
         }
     }
 
-    // Optional dev seeding (use env vars / appsettings overrides)
+    // Optional dev/demo seeding
     if (app.Configuration.GetValue<bool>("Seed:Enabled"))
     {
         using var seedScope = app.Services.CreateScope();
         var seedDbContext = seedScope.ServiceProvider.GetRequiredService<AppDbContext>();
         var passwordHasher = seedScope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        await TestDataSeeder.SeedUsersAsync(seedDbContext, passwordHasher, logger, app.Configuration, app.Environment);
+
+        await TestDataSeeder.SeedUsersAsync(
+            seedDbContext,
+            passwordHasher,
+            logger,
+            app.Configuration,
+            app.Environment);
     }
 
     using var outboxScope = app.Services.CreateScope();
     var outboxDbContext = outboxScope.ServiceProvider.GetRequiredService<AppDbContext>();
+
     await outboxDbContext.Database.ExecuteSqlRawAsync(
         """
         IF OBJECT_ID(N'[dbo].[OutboxMessages]', N'U') IS NULL

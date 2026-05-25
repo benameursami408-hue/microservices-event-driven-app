@@ -140,7 +140,7 @@ Password123!
 ### 6. IA suggere une priorite urgente
 
 1. Ouvrir une reclamation avec description de type production bloquee / danger / arret.
-2. Afficher l'analyse dans `AI Priority Analysis`.
+2. Afficher l'analyse dans `Recherche intelligente`.
 3. Presenter l'assistant comme un modele rule-based explicable, pas comme un vrai LLM/OpenAI.
 
 ## Notes techniques

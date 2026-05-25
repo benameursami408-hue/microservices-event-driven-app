@@ -26,7 +26,7 @@ export function AiPriorityAnalysisCard({
   const safeError = error ? getFriendlyApiError(error) : '';
 
   return (
-    <Card title="AI Priority Analysis" icon={Brain} className="ai-priority-card">
+    <Card title="Recherche intelligente" icon={Brain} className="ai-priority-card">
       {loading && (
         <div className="empty-state compact">
           <Loader2 size={18} className="spin" />

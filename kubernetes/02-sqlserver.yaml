@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlserver-data
+  namespace: sav-pro
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlserver
+  namespace: sav-pro
+spec:
+  type: ClusterIP
+  selector:
+    app: sqlserver
+  ports:
+    - name: sql
+      port: 1433
+      targetPort: 1433
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqlserver
+  namespace: sav-pro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqlserver
+  template:
+    metadata:
+      labels:
+        app: sqlserver
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: sqlserver
+          image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1433
+          env:
+            - name: ACCEPT_EULA
+              value: "Y"
+            - name: MSSQL_PID
+              value: "Developer"
+            - name: MSSQL_SA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sav-secrets
+                  key: SA_PASSWORD
+          volumeMounts:
+            - name: sqlserver-data
+              mountPath: /var/opt/mssql
+          readinessProbe:
+            tcpSocket:
+              port: 1433
+            initialDelaySeconds: 40
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: 1433
+            initialDelaySeconds: 90
+            periodSeconds: 20
+            failureThreshold: 6
+      volumes:
+        - name: sqlserver-data
+          persistentVolumeClaim:
+            claimName: sqlserver-data

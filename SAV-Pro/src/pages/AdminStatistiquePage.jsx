@@ -47,20 +47,21 @@ function hasData(rows = []) {
 
 function withPercentages(rows = []) {
   const total = rows.reduce((sum, item) => sum + Number(item.value || 0), 0);
-  return rows.map(item => ({
+  return rows.map((item, index) => ({
     ...item,
+    color: chartColors[index % chartColors.length],
     percentValue: total ? Number(item.value || 0) * 100 / total : 0
   }));
 }
 
-function renderPieLabel({ cx, cy, midAngle, outerRadius, value, percentValue }) {
-  if (!value || percentValue < 5) return null;
-  const radius = outerRadius + 18;
+function renderPieLabel({ cx, cy, midAngle, outerRadius, value, percentValue, payload }) {
+  if (!value) return null;
+  const radius = outerRadius + 10;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="#334155" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight={700}>
+    <text x={x} y={y} fill={payload?.color || '#334155'} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight={850}>
       {value} ({formatPercent(percentValue)})
     </text>
   );
@@ -72,7 +73,7 @@ function formatPieTooltip(value, _name, props) {
 
 function formatPieLegend(value, entry) {
   const payload = entry?.payload || {};
-  return `${value}: ${payload.value || 0} (${formatPercent(payload.percentValue)})`;
+  return <span style={{ color: payload.color || '#334155' }}>{value}: {payload.value || 0} ({formatPercent(payload.percentValue)})</span>;
 }
 
 export function AdminStatistiquePage({ user }) {
@@ -182,7 +183,7 @@ export function AdminStatistiquePage({ user }) {
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={reclamationStatusData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={78} paddingAngle={2} label={renderPieLabel} labelLine={false}>
-                {reclamationStatusData.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
+                {reclamationStatusData.map(entry => <Cell key={entry.name} fill={entry.color} />)}
               </Pie>
               <Tooltip formatter={formatPieTooltip} />
               <Legend formatter={formatPieLegend} />
@@ -194,7 +195,7 @@ export function AdminStatistiquePage({ user }) {
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={interventionStatusData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={78} paddingAngle={2} label={renderPieLabel} labelLine={false}>
-                {interventionStatusData.map((entry, index) => <Cell key={entry.name} fill={chartColors[index % chartColors.length]} />)}
+                {interventionStatusData.map(entry => <Cell key={entry.name} fill={entry.color} />)}
               </Pie>
               <Tooltip formatter={formatPieTooltip} />
               <Legend formatter={formatPieLegend} />

@@ -49,14 +49,14 @@ function withStatusPercentages(rows = []) {
   }));
 }
 
-function renderStatusPieLabel({ cx, cy, midAngle, outerRadius, value, percentValue }) {
-  if (!value || percentValue < 5) return null;
-  const radius = outerRadius + 18;
+function renderStatusPieLabel({ cx, cy, midAngle, outerRadius, value, percentValue, payload }) {
+  if (!value) return null;
+  const radius = outerRadius + 10;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
   return (
-    <text x={x} y={y} fill="#334155" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={11} fontWeight={700}>
+    <text x={x} y={y} fill={payload?.color || '#334155'} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight={850}>
       {value} ({formatPercent(percentValue)})
     </text>
   );
@@ -68,7 +68,7 @@ function formatStatusTooltip(value, name, props) {
 
 function formatStatusLegend(value, entry) {
   const payload = entry?.payload || {};
-  return `${value}: ${payload.value || 0} (${formatPercent(payload.percentValue)})`;
+  return <span style={{ color: payload.color || '#334155' }}>{value}: {payload.value || 0} ({formatPercent(payload.percentValue)})</span>;
 }
 
 export function DashboardPage({ user, navigate, notify }) {
