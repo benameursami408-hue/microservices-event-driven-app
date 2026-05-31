@@ -62,6 +62,13 @@ builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Intervention Service API",
+        Version = "v1",
+        Description = "Planning, intervention execution, visit reports, and realization workflows."
+    });
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -162,10 +169,14 @@ app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "Intervention Service Swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Intervention Service API v1");
+    });
 }
 
 if (!app.Environment.IsEnvironment("Docker"))

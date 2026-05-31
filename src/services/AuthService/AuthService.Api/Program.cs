@@ -99,6 +99,13 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Auth Service API",
+        Version = "v1",
+        Description = "Authentication, account management, and administrative user operations."
+    });
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -241,7 +248,11 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker"))
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "Auth Service Swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Auth Service API v1");
+    });
 }
 
 if (!app.Environment.IsEnvironment("Docker"))
