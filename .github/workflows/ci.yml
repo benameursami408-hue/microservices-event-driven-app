@@ -11,57 +11,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 9.0.x
+      - uses: actions/checkout@v4
 
-    - name: Restore dependencies
-      run: |
-        for sln in src/services/*/*.sln; do
-          if [ -f "$sln" ]; then
-             dotnet restore "$sln"
-          fi
-        done
-        for csproj in src/gateway/*/*.csproj; do
-          if [ -f "$csproj" ]; then
-             dotnet restore "$csproj"
-          fi
-        done
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build backend
-      run: |
-        for sln in src/services/*/*.sln; do
-          if [ -f "$sln" ]; then
-             dotnet build "$sln" --no-restore --configuration Release
-          fi
-        done
-        for csproj in src/gateway/*/*.csproj; do
-          if [ -f "$csproj" ]; then
-             dotnet build "$csproj" --no-restore --configuration Release
-          fi
-        done
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
 
-    - name: Run backend tests
-      run: |
-        for testproj in src/services/*/*/*.Tests.csproj; do
-          if [ -f "$testproj" ]; then
-             dotnet test "$testproj" --configuration Release --verbosity normal
-          fi
-        done
+      - name: Build application images
+        run: docker compose build --pull
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: 'frontend/package-lock.json'
-        
-    - name: Build Frontend
-      working-directory: ./frontend
-      run: |
-        npm ci
-        npm run lint
-        npm run build
+      - name: Run backend tests in Docker
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            mcr.microsoft.com/dotnet/sdk:9.0 \
+            bash -lc '
+              set -euo pipefail
+              test_projects="$(find src/services -name "*.Tests.csproj" -print)"
+
+              if [ -z "$test_projects" ]; then
+                echo "No backend test projects found."
+                exit 0
+              fi
+
+              find src/services -name "*.Tests.csproj" -print0 \
+                | xargs -0 -I {} dotnet test "{}" --configuration Release --verbosity normal
+            '
